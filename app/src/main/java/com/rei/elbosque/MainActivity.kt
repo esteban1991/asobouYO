@@ -85,6 +85,12 @@ import com.rei.elbosque.ui.TrazoScreen
 import com.rei.elbosque.ui.TrazoViewModel
 import com.rei.elbosque.ui.VestirReiScreen
 import com.rei.elbosque.ui.VestirReiViewModel
+import com.rei.elbosque.ui.ToboganScreen
+import com.rei.elbosque.ui.ToboganViewModel
+import com.rei.elbosque.ui.CarruselScreen
+import com.rei.elbosque.ui.CarruselViewModel
+import com.rei.elbosque.ui.TrenParqueScreen
+import com.rei.elbosque.ui.TrenParqueViewModel
 import com.rei.elbosque.ui.theme.BosqueDeReiTheme
 import kotlinx.coroutines.delay
 
@@ -322,6 +328,24 @@ class MainActivity : ComponentActivity() {
                         composable("respira") {
                             val vm: RespiraViewModel = viewModel()
                             RespiraScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
+                        composable("tobogan") {
+                            val vm: ToboganViewModel = viewModel()
+                            ToboganScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
+                        composable("carrusel") {
+                            val vm: CarruselViewModel = viewModel()
+                            CarruselScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
+                        composable("tren_parque") {
+                            val vm: TrenParqueViewModel = viewModel()
+                            TrenParqueScreen(vm, narrador, recompensas::premiarAcierto) {
                                 navController.popBackStack()
                             }
                         }

@@ -166,6 +166,12 @@ class Narrador(context: Context) : TextToSpeech.OnInitListener {
 }
 
 object Sonidos {
+    /** Melodía breve de carrusel, luminosa y tranquila. */
+    fun carrusel() = reproducirMelodia(
+        notas = listOf(523.3 to 0.0, 659.3 to .22, 784.0 to .44, 1046.5 to .68, 784.0 to .92),
+        duracion = 1.45,
+        volumen = .20
+    )
     /** Acorde ascendente brillante, parecido a tres estrellitas mágicas. */
     fun estrella() = reproducirMelodia(
         notas = listOf(1046.5 to 0.00, 1318.5 to 0.12, 1568.0 to 0.24),

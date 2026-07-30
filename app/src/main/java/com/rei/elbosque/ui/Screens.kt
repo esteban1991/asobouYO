@@ -352,6 +352,15 @@ fun InicioScreen(
                     item { BotonMenu(R.drawable.ic_paraguas, "Respira", Color(0xFFB8D8F5)) {
                         narrador.decir("Respira con Rei"); onAbrir("respira")
                     } }
+                    item { BotonMenu(R.drawable.parque_conejo, "Tobogán", Rosa) {
+                        narrador.decir("Tobogán de animales"); onAbrir("tobogan")
+                    } }
+                    item { BotonMenu(R.drawable.parque_caballo, "Carrusel", Color(0xFFFFD66B)) {
+                        narrador.decir("Carrusel de animales"); onAbrir("carrusel")
+                    } }
+                    item { BotonMenu(R.drawable.parque_elefante, "Tren", Menta) {
+                        narrador.decir("Tren del parque"); onAbrir("tren_parque")
+                    } }
                 }
             }
             Button(
@@ -1701,14 +1710,53 @@ private fun ReiConRopa(prendas: List<Prenda>, puestas: Set<TipoPrenda>, modifier
         drawCircle(Color(0xFFFF9FA8).copy(.65f), radius = w*.035f, center = Offset(w*.63f, h*.37f))
         drawArc(Tinta, 18f, 144f, false, Offset(w*.44f,h*.34f), Size(w*.12f,h*.08f),
             style = Stroke(w*.012f, cap = StrokeCap.Round))
+        // Nota: en el cuerpo de Rei se usa siempre la misma silueta genérica por
+        // categoría (no el dibujo exacto de cada estilo). Intentar encajar las 30
+        // formas de la bandeja sobre el cuerpo real, con cajas inventadas sin poder
+        // verlas, fue lo que rompió la vestimenta. El color sí siempre coincide.
         if (TipoPrenda.GORRO in puestas) prendaDe(TipoPrenda.GORRO)?.let { prenda ->
-            dibujarPrenda(prenda.estilo, prenda.color, w * .20f, -h * .04f, w * .56f, h * .56f)
+            val color = prenda.color
+            if (prenda.estilo == EstiloPrenda.CORONA) {
+                val corona = Path().apply {
+                    moveTo(w * .27f, h * .38f); lineTo(w * .27f, h * .20f)
+                    lineTo(w * .38f, h * .30f); lineTo(w * .5f, h * .10f)
+                    lineTo(w * .62f, h * .30f); lineTo(w * .73f, h * .20f)
+                    lineTo(w * .73f, h * .38f); close()
+                }
+                drawPath(corona, color)
+                drawCircle(Color.White.copy(.9f), radius = w * .03f, center = Offset(w * .5f, h * .14f))
+            } else {
+                drawArc(color, 180f, 180f, true, Offset(w * .27f, h * .04f), Size(w * .46f, h * .34f))
+                drawRoundRect(
+                    color, Offset(w * .25f, h * .19f), Size(w * .50f, h * .08f),
+                    androidx.compose.ui.geometry.CornerRadius(w * .04f)
+                )
+                drawCircle(Color.White.copy(.9f), radius = w * .055f, center = Offset(w * .5f, h * .045f))
+            }
         }
         if (TipoPrenda.BUFANDA in puestas) prendaDe(TipoPrenda.BUFANDA)?.let { prenda ->
-            dibujarPrenda(prenda.estilo, prenda.color, w * .18f, h * .40f, w * .60f, h * .56f)
+            val color = prenda.color
+            drawRoundRect(
+                color, Offset(w * .29f, h * .45f), Size(w * .42f, h * .10f),
+                androidx.compose.ui.geometry.CornerRadius(w * .04f)
+            )
+            drawRoundRect(
+                color, Offset(w * .57f, h * .50f), Size(w * .11f, h * .25f),
+                androidx.compose.ui.geometry.CornerRadius(w * .035f)
+            )
         }
         if (TipoPrenda.BOTAS in puestas) prendaDe(TipoPrenda.BOTAS)?.let { prenda ->
-            dibujarPrenda(prenda.estilo, prenda.color, w * .18f, h * .70f, w * .64f, h * .26f)
+            val color = prenda.color
+            drawRoundRect(
+                color, Offset(w * .34f, h * .82f), Size(w * .15f, h * .16f),
+                androidx.compose.ui.geometry.CornerRadius(w * .04f)
+            )
+            drawRoundRect(
+                color, Offset(w * .51f, h * .82f), Size(w * .15f, h * .16f),
+                androidx.compose.ui.geometry.CornerRadius(w * .04f)
+            )
+            drawOval(Color.White.copy(.35f), Offset(w * .35f, h * .84f), Size(w * .12f, h * .035f))
+            drawOval(Color.White.copy(.35f), Offset(w * .53f, h * .84f), Size(w * .12f, h * .035f))
         }
     }
 }
