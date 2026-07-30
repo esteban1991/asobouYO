@@ -227,11 +227,7 @@ private fun ObjetoArrastrable(
         ),
         elevation = ButtonDefaults.buttonElevation(8.dp)
     ) {
-        Image(
-            painter = painterResource(objeto.icono),
-            contentDescription = objeto.nombre,
-            modifier = Modifier.size(112.dp)
-        )
+        AnimalAnimado(objeto.icono,objeto.nombre,Modifier.size(112.dp))
     }
 }
 
@@ -266,12 +262,10 @@ private fun Autobus(
                                 .background(Color(0xFFBDEBFA), RoundedCornerShape(18.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Image(
-                                painter = painterResource(objeto.icono),
-                                contentDescription = objeto.nombre,
-                                modifier = Modifier
-                                    .size(68.dp)
-                                    .alpha(if (subio) 1f else .22f)
+                            AnimalAnimado(
+                                objeto.icono,objeto.nombre,
+                                Modifier.size(68.dp).alpha(if(subio)1f else .22f),
+                                activo=subio
                             )
                         }
                         Text(

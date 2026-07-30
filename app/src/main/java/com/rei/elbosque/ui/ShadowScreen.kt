@@ -158,11 +158,7 @@ fun SombrasScreen(
                             containerColor = listOf(Menta, Rosa, Lila)[posicion]
                         )
                     ) {
-                        Image(
-                            painterResource(opcion.icono),
-                            contentDescription = opcion.nombre,
-                            modifier = Modifier.size(120.dp)
-                        )
+                        AnimalAnimado(opcion.icono,opcion.nombre,Modifier.size(120.dp))
                     }
                 }
             }

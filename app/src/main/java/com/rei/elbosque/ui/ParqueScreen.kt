@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -127,7 +128,7 @@ class TrenParqueViewModel(private val saved: SavedStateHandle) : ViewModel() {
 @Composable private fun RowScope.OpcionAnimal(a:AnimalParque,habilitado:Boolean=true,onClick:()->Unit) {
     Card(onClick=onClick,enabled=habilitado,modifier=Modifier.weight(1f).aspectRatio(.9f),
         shape=RoundedCornerShape(30.dp),colors=CardDefaults.cardColors(containerColor=Color.White),elevation=CardDefaults.cardElevation(7.dp)) {
-        Image(painterResource(a.icono),a.nombre,Modifier.fillMaxSize().padding(6.dp))
+        AnimalAnimado(a.icono,a.nombre,Modifier.fillMaxSize().padding(6.dp),habilitado)
     }
 }
 
@@ -180,11 +181,7 @@ class TrenParqueViewModel(private val saved: SavedStateHandle) : ViewModel() {
                 verticalAlignment=Alignment.Bottom
             ) {
                 llegados.forEach { llegado ->
-                    Image(
-                        painterResource(llegado.icono),
-                        llegado.nombre,
-                        Modifier.size(98.dp).padding(2.dp)
-                    )
+                    AnimalAnimado(llegado.icono,llegado.nombre,Modifier.size(98.dp).padding(2.dp))
                 }
             }
             if (fiesta) FiestaTobogan(Modifier.fillMaxSize())
@@ -414,15 +411,16 @@ private fun EstrellitaCarrusel(fase: Float, modifier: Modifier = Modifier) {
                     .offset(y = (vaiven * -6f + bamboleo.value * -16f).dp)
             )
             if (animalMontado == null) {
-                Row(Modifier.fillMaxWidth(.88f).rotate(giro.value),horizontalArrangement=Arrangement.SpaceEvenly){opciones.forEach{Image(painterResource(it.icono),null,Modifier.size(105.dp))}}
+                Row(Modifier.fillMaxWidth(.88f).rotate(giro.value),horizontalArrangement=Arrangement.SpaceEvenly){opciones.forEach{AnimalAnimado(it.icono,it.nombre,Modifier.size(105.dp))}}
             } else {
-                Image(
-                    painterResource(animalMontado!!.icono),
+                AnimalAnimado(
+                    animalMontado!!.icono,
                     animalMontado!!.nombre,
                     Modifier
                         .size(84.dp)
                         .offset(x = 20.dp, y = (12 + vaiven * -6f + bamboleo.value * -16f).dp)
-                        .scale(montaEscala.value)
+                        .scale(montaEscala.value),
+                    activo=!bloqueado
                 )
             }
         }
@@ -500,13 +498,24 @@ private fun EstrellitaCarrusel(fase: Float, modifier: Modifier = Modifier) {
                     activo=bloqueado,
                     modifier=Modifier.size(150.dp).align(Alignment.TopEnd).offset(x=(-80).dp,y=(-5).dp)
                 )
-                Image(painterResource(R.drawable.tren_rosa),"Tren rosa",Modifier.fillMaxWidth())
+                // Silueta crema: separa el tren del paisaje sin volver opaca la escena completa.
+                Image(
+                    painterResource(R.drawable.tren_contraste),
+                    null,
+                    Modifier.fillMaxWidth().scale(1.035f).offset(y=3.dp),
+                    colorFilter=ColorFilter.tint(Color(0xFFFFF3C4))
+                )
+                Image(
+                    painterResource(R.drawable.tren_contraste),
+                    "Tren violeta de alto contraste",
+                    Modifier.fillMaxWidth()
+                )
                 // Los pasajeros permanecen visibles tras las cortinas del vagón.
                 Row(
                     Modifier.fillMaxWidth(.42f).align(Alignment.CenterStart).offset(x=18.dp,y=(-22).dp),
                     horizontalArrangement=Arrangement.SpaceEvenly
                 ){
-                    abordo.forEach{Image(painterResource(it.icono),it.nombre,Modifier.size(55.dp))}
+                    abordo.forEach{AnimalAnimado(it.icono,it.nombre,Modifier.size(55.dp))}
                 }
             }
             pasajeroSubiendo?.let { pasajero ->

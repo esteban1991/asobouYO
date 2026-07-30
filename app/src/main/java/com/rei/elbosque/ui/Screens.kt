@@ -727,11 +727,7 @@ fun AnimalesScreen(
                         ),
                         elevation = ButtonDefaults.buttonElevation(7.dp)
                     ) {
-                        Image(
-                            painterResource(animal.icono),
-                            contentDescription = animal.nombre,
-                            modifier = Modifier.size(125.dp)
-                        )
+                        AnimalAnimado(animal.icono,animal.nombre,Modifier.size(125.dp))
                     }
                 }
             }
@@ -1113,11 +1109,7 @@ fun SonidosAnimalesScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Menta),
                 elevation = ButtonDefaults.buttonElevation(9.dp)
             ) {
-                Image(
-                    painterResource(actual.icono),
-                    contentDescription = actual.nombre,
-                    modifier = Modifier.size(170.dp)
-                )
+                AnimalAnimado(actual.icono,actual.nombre,Modifier.size(170.dp))
             }
             Spacer(Modifier.height(20.dp))
         }
@@ -1190,11 +1182,7 @@ fun QuienDiceEstoScreen(
                         ),
                         elevation = ButtonDefaults.buttonElevation(7.dp)
                     ) {
-                        Image(
-                            painterResource(animal.icono),
-                            contentDescription = animal.nombre,
-                            modifier = Modifier.size(100.dp)
-                        )
+                        AnimalAnimado(animal.icono,animal.nombre,Modifier.size(100.dp))
                     }
                 }
             }
@@ -2356,11 +2344,7 @@ fun DondeViveScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(.78f)),
                 elevation = ButtonDefaults.buttonElevation(8.dp)
             ) {
-                Image(
-                    painterResource(objetivo.icono),
-                    contentDescription = objetivo.nombre,
-                    modifier = Modifier.size(150.dp)
-                )
+                AnimalAnimado(objetivo.icono,objetivo.nombre,Modifier.size(150.dp))
             }
             Text(
                 "Escucha y toca su hogar",
