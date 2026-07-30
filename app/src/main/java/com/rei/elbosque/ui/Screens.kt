@@ -311,6 +311,9 @@ fun InicioScreen(
                     item { BotonMenu(R.drawable.ic_manzana, "Cestas", Color(0xFFFFD66B)) {
                         narrador.decir("A cada cesta su color"); onAbrir("clasificar_color")
                     } }
+                    item { BotonMenu(R.drawable.ic_regadera, "Mi planta", Menta) {
+                        narrador.decir("Riega tu planta"); onAbrir("mi_planta")
+                    } }
                     item { BotonMenu(R.drawable.ic_platano, "Rompecabezas", Color(0xFFB8D8F5)) {
                         narrador.decir("Rompecabezas"); onAbrir("puzzle")
                     } }
@@ -334,6 +337,9 @@ fun InicioScreen(
                     } }
                     item { BotonMenu(R.drawable.ic_zapato, "El Camino", Color(0xFFB8D8F5)) {
                         narrador.decir("El camino de Rei"); onAbrir("laberinto")
+                    } }
+                    item { BotonMenu(R.drawable.ic_cuchara, "Imita el Ritmo", Menta) {
+                        narrador.decir("Imita el ritmo"); onAbrir("ritmo")
                     } }
                 }
             }
@@ -2279,6 +2285,220 @@ fun LaberintoScreen(
                         }
                 ) {
                     CaritaRei(Modifier.fillMaxSize())
+                }
+            }
+        }
+    }
+}
+
+private fun sonarInstrumento(instrumento: Instrumento) = when (instrumento) {
+    Instrumento.TAMBOR -> Sonidos.tambor()
+    Instrumento.CAMPANA -> Sonidos.campana()
+    Instrumento.XILOFONO -> Sonidos.xilofono()
+    Instrumento.MARACAS -> Sonidos.maracas()
+}
+
+@Composable
+private fun IconoInstrumento(instrumento: Instrumento, modifier: Modifier) {
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+        when (instrumento) {
+            Instrumento.TAMBOR -> {
+                drawRoundRect(
+                    Color(0xFFE95D68),
+                    topLeft = Offset(w * .18f, h * .30f),
+                    size = Size(w * .64f, h * .48f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * .06f)
+                )
+                drawOval(Color(0xFFFFF3DD), topLeft = Offset(w * .18f, h * .18f), size = Size(w * .64f, h * .22f))
+                drawOval(
+                    Color.Black.copy(alpha = .15f),
+                    topLeft = Offset(w * .18f, h * .18f),
+                    size = Size(w * .64f, h * .22f),
+                    style = Stroke(width = w * .02f)
+                )
+                drawOval(Color(0xFFC1414F), topLeft = Offset(w * .18f, h * .68f), size = Size(w * .64f, h * .16f))
+                drawLine(
+                    Color(0xFF7A4B2E), Offset(w * .30f, h * .15f), Offset(w * .42f, h * .32f),
+                    strokeWidth = w * .035f, cap = StrokeCap.Round
+                )
+                drawLine(
+                    Color(0xFF7A4B2E), Offset(w * .70f, h * .15f), Offset(w * .58f, h * .32f),
+                    strokeWidth = w * .035f, cap = StrokeCap.Round
+                )
+            }
+            Instrumento.CAMPANA -> {
+                val cuerpo = Path().apply {
+                    moveTo(w * .35f, h * .75f)
+                    lineTo(w * .30f, h * .35f)
+                    quadraticTo(w * .5f, h * .12f, w * .70f, h * .35f)
+                    lineTo(w * .65f, h * .75f)
+                    close()
+                }
+                drawPath(cuerpo, Color(0xFFF0C94D))
+                drawRoundRect(
+                    Color(0xFFE3B23C),
+                    topLeft = Offset(w * .28f, h * .73f),
+                    size = Size(w * .44f, h * .08f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * .03f)
+                )
+                drawCircle(Color(0xFFE3B23C), radius = w * .06f, center = Offset(w * .5f, h * .88f))
+                drawCircle(Color(0xFFE3B23C), radius = w * .05f, center = Offset(w * .5f, h * .08f))
+            }
+            Instrumento.XILOFONO -> {
+                val colores = listOf(Color(0xFFE95D68), Color(0xFFF5A15D), Color(0xFF6FCC9B), Color(0xFF55A9E8))
+                colores.forEachIndexed { i, color ->
+                    val anchoBarra = w * (.78f - i * .12f)
+                    drawRoundRect(
+                        color,
+                        topLeft = Offset(w / 2f - anchoBarra / 2f, h * (.12f + i * .21f)),
+                        size = Size(anchoBarra, h * .15f),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(h * .05f)
+                    )
+                }
+            }
+            Instrumento.MARACAS -> {
+                listOf(-1f, 1f).forEach { lado ->
+                    val cx = w * .5f + lado * w * .18f
+                    drawOval(
+                        Color(0xFFB37FEA),
+                        topLeft = Offset(cx - w * .16f, h * .15f),
+                        size = Size(w * .32f, h * .42f)
+                    )
+                    drawLine(
+                        Color(0xFF7A4B2E), Offset(cx, h * .55f), Offset(cx, h * .90f),
+                        strokeWidth = w * .05f, cap = StrokeCap.Round
+                    )
+                    drawCircle(Color.White.copy(alpha = .5f), radius = w * .03f, center = Offset(cx - w * .05f, h * .28f))
+                    drawCircle(Color.White.copy(alpha = .5f), radius = w * .03f, center = Offset(cx + w * .04f, h * .38f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RitmoScreen(
+    vm: RitmoViewModel,
+    narrador: Narrador,
+    premiar: () -> Unit,
+    onVolver: () -> Unit
+) {
+    val secuencia by vm.secuencia.collectAsStateWithLifecycle()
+    val progreso by vm.progreso.collectAsStateWithLifecycle()
+    var reproduciendo by remember { mutableStateOf(true) }
+    var resaltado by remember { mutableStateOf<Instrumento?>(null) }
+    var replayId by remember { mutableStateOf(0) }
+
+    LaunchedEffect(secuencia, replayId) {
+        reproduciendo = true
+        delay(500)
+        narrador.decir("Escucha")
+        delay(700)
+        secuencia.forEach { instrumento ->
+            resaltado = instrumento
+            sonarInstrumento(instrumento)
+            delay(600)
+            resaltado = null
+            delay(220)
+        }
+        narrador.decir("Ahora repite tú")
+        reproduciendo = false
+    }
+
+    Fondo {
+        Column(
+            Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Cabecera("Imita el Ritmo", onVolver)
+            Text(
+                "Escucha y repite tocando en orden",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color = Tinta,
+                textAlign = TextAlign.Center
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                secuencia.forEachIndexed { i, _ ->
+                    Box(
+                        Modifier
+                            .padding(6.dp)
+                            .size(18.dp)
+                            .background(if (i < progreso) Menta else Color.White.copy(.5f), CircleShape)
+                    )
+                }
+            }
+            Row(
+                Modifier.fillMaxWidth().height(150.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                listOf(Instrumento.TAMBOR, Instrumento.CAMPANA).forEachIndexed { i, instrumento ->
+                    Button(
+                        enabled = !reproduciendo,
+                        onClick = {
+                            sonarInstrumento(instrumento)
+                            val resultado = vm.tocar(instrumento)
+                            if (resultado.acierto) {
+                                if (resultado.rondaCompleta) {
+                                    Sonidos.estrella(); premiar()
+                                    narrador.felicitar("¡Muy bien, Rei!")
+                                } else {
+                                    narrador.decir(instrumento.nombre)
+                                }
+                            } else {
+                                Sonidos.errorSuave()
+                                narrador.decir("Oh, no. Escucha de nuevo")
+                                replayId++
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxSize()
+                            .scale(if (resaltado == instrumento) 1.15f else 1f),
+                        shape = RoundedCornerShape(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = listOf(Menta, Rosa)[i]
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(7.dp)
+                    ) { IconoInstrumento(instrumento, Modifier.size(96.dp)) }
+                }
+            }
+            Row(
+                Modifier.fillMaxWidth().height(150.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                listOf(Instrumento.XILOFONO, Instrumento.MARACAS).forEachIndexed { i, instrumento ->
+                    Button(
+                        enabled = !reproduciendo,
+                        onClick = {
+                            sonarInstrumento(instrumento)
+                            val resultado = vm.tocar(instrumento)
+                            if (resultado.acierto) {
+                                if (resultado.rondaCompleta) {
+                                    Sonidos.estrella(); premiar()
+                                    narrador.felicitar("¡Muy bien, Rei!")
+                                } else {
+                                    narrador.decir(instrumento.nombre)
+                                }
+                            } else {
+                                Sonidos.errorSuave()
+                                narrador.decir("Oh, no. Escucha de nuevo")
+                                replayId++
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxSize()
+                            .scale(if (resaltado == instrumento) 1.15f else 1f),
+                        shape = RoundedCornerShape(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = listOf(Lila, Melon)[i]
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(7.dp)
+                    ) { IconoInstrumento(instrumento, Modifier.size(96.dp)) }
                 }
             }
         }

@@ -61,9 +61,13 @@ import com.rei.elbosque.ui.NumerosScreen
 import com.rei.elbosque.ui.NumerosViewModel
 import com.rei.elbosque.ui.PuzzleScreen
 import com.rei.elbosque.ui.PuzzleViewModel
+import com.rei.elbosque.ui.PlantaScreen
+import com.rei.elbosque.ui.PlantaViewModel
 import com.rei.elbosque.ui.QuienDiceEstoScreen
 import com.rei.elbosque.ui.QuienDiceEstoViewModel
 import com.rei.elbosque.ui.RecompensasViewModel
+import com.rei.elbosque.ui.RitmoScreen
+import com.rei.elbosque.ui.RitmoViewModel
 import com.rei.elbosque.ui.RutinaDiariaScreen
 import com.rei.elbosque.ui.RutinaDiariaViewModel
 import com.rei.elbosque.ui.SombrasScreen
@@ -268,6 +272,12 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             }
                         }
+                        composable("mi_planta") {
+                            val vm: PlantaViewModel = viewModel()
+                            PlantaScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
                         composable("donde_vive") {
                             val vm: DondeViveViewModel = viewModel()
                             DondeViveScreen(vm, narrador, recompensas::premiarAcierto) {
@@ -277,6 +287,12 @@ class MainActivity : ComponentActivity() {
                         composable("laberinto") {
                             val vm: LaberintoViewModel = viewModel()
                             LaberintoScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
+                        composable("ritmo") {
+                            val vm: RitmoViewModel = viewModel()
+                            RitmoScreen(vm, narrador, recompensas::premiarAcierto) {
                                 navController.popBackStack()
                             }
                         }

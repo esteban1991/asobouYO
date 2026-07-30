@@ -280,6 +280,75 @@ object Sonidos {
         }.start()
     }
 
+    /** Golpe grave y breve: el "bum" de un tamborcito. */
+    fun tambor() {
+        val duracion = .24
+        val total = (frecuenciaMuestreo * duracion).toInt()
+        val muestras = ShortArray(total)
+        val ruido = kotlin.random.Random(System.nanoTime())
+        for (i in 0 until total) {
+            val t = i.toDouble() / frecuenciaMuestreo
+            var mezcla = 0.0
+            // El parche del tambor: la frecuencia cae rápido justo tras el golpe.
+            val frecuencia = 160.0 - (t / .15).coerceAtMost(1.0) * 70.0
+            mezcla += kotlin.math.sin(2.0 * Math.PI * frecuencia * t) * kotlin.math.exp(-t * 16.0)
+            // El chasquido de aire del golpe mismo.
+            if (t < 0.01) mezcla += ruido.nextDouble(-1.0, 1.0) * kotlin.math.exp(-t * 260.0) * .5
+            muestras[i] = aMuestra(mezcla * .55)
+        }
+        reproducirMuestras(muestras, duracion)
+    }
+
+    /** Timbre brillante y sostenido: una campanita de verdad, con sus armónicos. */
+    fun campana() {
+        val duracion = 1.1
+        val total = (frecuenciaMuestreo * duracion).toInt()
+        val muestras = ShortArray(total)
+        val armonicos = listOf(1.0 to 1.0, 1.5 to .55, 2.4 to .3, 3.8 to .15)
+        for (i in 0 until total) {
+            val t = i.toDouble() / frecuenciaMuestreo
+            var mezcla = 0.0
+            armonicos.forEach { (proporcion, peso) ->
+                mezcla += kotlin.math.sin(2.0 * Math.PI * 1046.5 * proporcion * t) * peso
+            }
+            mezcla *= kotlin.math.exp(-t * 3.2)
+            muestras[i] = aMuestra(mezcla * .26)
+        }
+        reproducirMuestras(muestras, duracion)
+    }
+
+    /** Tono limpio y breve, como una barrita de xilófono. */
+    fun xilofono() {
+        val duracion = .42
+        val total = (frecuenciaMuestreo * duracion).toInt()
+        val muestras = ShortArray(total)
+        for (i in 0 until total) {
+            val t = i.toDouble() / frecuenciaMuestreo
+            var mezcla = kotlin.math.sin(2.0 * Math.PI * 1318.5 * t) +
+                kotlin.math.sin(2.0 * Math.PI * 2637.0 * t) * .25
+            mezcla *= kotlin.math.exp(-t * 9.0)
+            muestras[i] = aMuestra(mezcla * .30)
+        }
+        reproducirMuestras(muestras, duracion)
+    }
+
+    /** Sacudida de maracas: dos golpecitos de puro "shhh" de ruido. */
+    fun maracas() {
+        val duracion = .30
+        val total = (frecuenciaMuestreo * duracion).toInt()
+        val muestras = ShortArray(total)
+        val ruido = kotlin.random.Random(System.nanoTime())
+        for (i in 0 until total) {
+            val t = i.toDouble() / frecuenciaMuestreo
+            val golpe1 = kotlin.math.exp(-t * 22.0)
+            val t2 = t - .12
+            val golpe2 = if (t2 >= 0) kotlin.math.exp(-t2 * 22.0) else 0.0
+            val envolvente = golpe1 + golpe2 * .8
+            muestras[i] = aMuestra(ruido.nextDouble(-1.0, 1.0) * envolvente * .30)
+        }
+        reproducirMuestras(muestras, duracion)
+    }
+
     /** Pequeña melodía sin archivos ni permisos: tres tonos locales. */
     fun celebracion() = reproducirMelodia(
         notas = listOf(

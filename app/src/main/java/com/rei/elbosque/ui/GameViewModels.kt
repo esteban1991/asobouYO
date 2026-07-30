@@ -766,3 +766,62 @@ class LaberintoViewModel(private val savedState: SavedStateHandle) : ViewModel()
         return true
     }
 }
+
+enum class Instrumento(val nombre: String) {
+    TAMBOR("tambor"),
+    CAMPANA("campana"),
+    XILOFONO("xilófono"),
+    MARACAS("maracas")
+}
+
+data class ResultadoRitmo(val acierto: Boolean, val rondaCompleta: Boolean)
+
+class RitmoViewModel(private val savedState: SavedStateHandle) : ViewModel() {
+    private val instrumentos = Instrumento.entries
+
+    private fun nuevaSecuencia(longitud: Int): List<Instrumento> = List(longitud) { instrumentos.random() }
+
+    private fun guardarSecuencia(secuencia: List<Instrumento>) {
+        savedState["ritmo_secuencia"] = ArrayList(secuencia.map { it.name })
+    }
+
+    // Empieza con dos sonidos y sube a tres; para 2-3 años no conviene ir más allá.
+    private val _longitud = MutableStateFlow(savedState["ritmo_longitud"] ?: 2)
+    val longitud: StateFlow<Int> = _longitud
+
+    private val _secuencia = MutableStateFlow(
+        (savedState.get<ArrayList<String>>("ritmo_secuencia"))
+            ?.map { Instrumento.valueOf(it) }
+            ?.takeIf { it.isNotEmpty() }
+            ?: nuevaSecuencia(_longitud.value).also { guardarSecuencia(it) }
+    )
+    val secuencia: StateFlow<List<Instrumento>> = _secuencia
+
+    private val _progreso = MutableStateFlow(savedState["ritmo_progreso"] ?: 0)
+    val progreso: StateFlow<Int> = _progreso
+
+    /** Devuelve si el toque siguió la secuencia y si con él se completó toda la ronda. */
+    fun tocar(instrumento: Instrumento): ResultadoRitmo {
+        if (_secuencia.value.getOrNull(_progreso.value) != instrumento) {
+            _progreso.value = 0
+            savedState["ritmo_progreso"] = 0
+            return ResultadoRitmo(acierto = false, rondaCompleta = false)
+        }
+        val siguientePaso = _progreso.value + 1
+        val completa = siguientePaso >= _secuencia.value.size
+        if (completa) {
+            val siguienteLongitud = (_longitud.value + 1).coerceAtMost(3)
+            _longitud.value = siguienteLongitud
+            savedState["ritmo_longitud"] = siguienteLongitud
+            val nueva = nuevaSecuencia(siguienteLongitud)
+            _secuencia.value = nueva
+            guardarSecuencia(nueva)
+            _progreso.value = 0
+            savedState["ritmo_progreso"] = 0
+        } else {
+            _progreso.value = siguientePaso
+            savedState["ritmo_progreso"] = siguientePaso
+        }
+        return ResultadoRitmo(acierto = true, rondaCompleta = completa)
+    }
+}
