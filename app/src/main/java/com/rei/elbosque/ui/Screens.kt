@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -1490,9 +1491,157 @@ fun PuzzleScreen(
     }
 }
 
+/**
+ * Dibuja la prenda (con su estilo real: corona, sombrero, mochila, tenis...) dentro
+ * de un rectángulo arbitrario. La usan tanto el ícono de la bandeja como Rei puesta,
+ * así los dos SIEMPRE muestran la misma forma — si no, la bandeja podía mostrar una
+ * corona y Rei terminaba con un gorro genérico que no tenía nada que ver.
+ */
+private fun DrawScope.dibujarPrenda(
+    estilo: EstiloPrenda,
+    color: Color,
+    origenX: Float,
+    origenY: Float,
+    ancho: Float,
+    alto: Float
+) {
+    fun x(f: Float) = origenX + ancho * f
+    fun y(f: Float) = origenY + alto * f
+    val borde = Color(0xFF5B6170).copy(alpha = .62f)
+    when (estilo.tipo) {
+        TipoPrenda.GORRO -> when (estilo) {
+            EstiloPrenda.CORONA -> {
+                val p = Path().apply {
+                    moveTo(x(.12f), y(.78f)); lineTo(x(.12f), y(.28f))
+                    lineTo(x(.34f), y(.53f)); lineTo(x(.5f), y(.18f))
+                    lineTo(x(.66f), y(.53f)); lineTo(x(.88f), y(.28f))
+                    lineTo(x(.88f), y(.78f)); close()
+                }
+                drawPath(p, color)
+                drawCircle(borde, ancho * .035f, Offset(x(.5f), y(.65f)))
+            }
+            EstiloPrenda.LAZO -> {
+                drawOval(color, Offset(x(.08f), y(.28f)), Size(ancho * .40f, alto * .42f))
+                drawOval(color, Offset(x(.52f), y(.28f)), Size(ancho * .40f, alto * .42f))
+                drawCircle(borde, ancho * .11f, Offset(x(.5f), y(.5f)))
+            }
+            EstiloPrenda.OREJITAS -> {
+                drawOval(color, Offset(x(.18f), y(.02f)), Size(ancho * .24f, alto * .68f))
+                drawOval(color, Offset(x(.58f), y(.02f)), Size(ancho * .24f, alto * .68f))
+                drawRoundRect(
+                    color, Offset(x(.10f), y(.62f)), Size(ancho * .80f, alto * .20f),
+                    androidx.compose.ui.geometry.CornerRadius(ancho * .1f)
+                )
+            }
+            EstiloPrenda.SOMBRERO, EstiloPrenda.SOMBRERO_SOL -> {
+                drawOval(color, Offset(x(.04f), y(.57f)), Size(ancho * .92f, alto * .25f))
+                drawRoundRect(
+                    color, Offset(x(.28f), y(.18f)), Size(ancho * .44f, alto * .50f),
+                    androidx.compose.ui.geometry.CornerRadius(ancho * .12f)
+                )
+                drawLine(borde, Offset(x(.30f), y(.55f)), Offset(x(.70f), y(.55f)), ancho * .035f)
+            }
+            EstiloPrenda.TIARA -> {
+                drawArc(
+                    color, 190f, 160f, false, Offset(x(.15f), y(.20f)), Size(ancho * .70f, alto * .60f),
+                    style = Stroke(ancho * .11f, cap = StrokeCap.Round)
+                )
+                drawCircle(color, ancho * .10f, Offset(x(.5f), y(.25f)))
+            }
+            else -> {
+                drawCircle(color, ancho * .105f, Offset(x(.5f), y(.13f)))
+                drawArc(color, 180f, 180f, true, Offset(x(.16f), y(.18f)), Size(ancho * .68f, alto * .82f))
+                drawRoundRect(
+                    color, Offset(x(.10f), y(.63f)), Size(ancho * .80f, alto * .22f),
+                    androidx.compose.ui.geometry.CornerRadius(ancho * .10f)
+                )
+            }
+        }
+        TipoPrenda.BUFANDA -> when (estilo) {
+            EstiloPrenda.COLLAR -> {
+                drawArc(
+                    color, 15f, 150f, false, Offset(x(.16f), y(.12f)), Size(ancho * .68f, alto * .62f),
+                    style = Stroke(ancho * .08f, cap = StrokeCap.Round)
+                )
+                drawCircle(color, ancho * .12f, Offset(x(.5f), y(.68f)))
+            }
+            EstiloPrenda.CAPA -> {
+                val p = Path().apply {
+                    moveTo(x(.5f), y(.12f)); lineTo(x(.90f), y(.88f))
+                    lineTo(x(.10f), y(.88f)); close()
+                }
+                drawPath(p, color)
+                drawCircle(borde, ancho * .07f, Offset(x(.5f), y(.2f)))
+            }
+            EstiloPrenda.MOCHILA -> {
+                drawRoundRect(
+                    color, Offset(x(.20f), y(.18f)), Size(ancho * .60f, alto * .70f),
+                    androidx.compose.ui.geometry.CornerRadius(ancho * .16f)
+                )
+                drawRoundRect(
+                    borde, Offset(x(.33f), y(.08f)), Size(ancho * .34f, alto * .18f),
+                    androidx.compose.ui.geometry.CornerRadius(ancho * .08f)
+                )
+            }
+            EstiloPrenda.CHALECO, EstiloPrenda.SUETER, EstiloPrenda.CHAQUETA,
+            EstiloPrenda.VESTIDO, EstiloPrenda.CAMISETA, EstiloPrenda.IMPERMEABLE -> {
+                val p = Path().apply {
+                    moveTo(x(.30f), y(.12f)); lineTo(x(.08f), y(.32f))
+                    lineTo(x(.23f), y(.52f)); lineTo(x(.30f), y(.42f))
+                    lineTo(x(.24f), y(.90f)); lineTo(x(.76f), y(.90f))
+                    lineTo(x(.70f), y(.42f)); lineTo(x(.77f), y(.52f))
+                    lineTo(x(.92f), y(.32f)); lineTo(x(.70f), y(.12f)); close()
+                }
+                drawPath(p, color)
+                drawLine(borde, Offset(x(.5f), y(.22f)), Offset(x(.5f), y(.82f)), ancho * .025f)
+            }
+            else -> {
+                drawRoundRect(
+                    color, Offset(x(.08f), y(.22f)), Size(ancho * .73f, alto * .28f),
+                    androidx.compose.ui.geometry.CornerRadius(ancho * .12f)
+                )
+                drawRoundRect(
+                    color, Offset(x(.56f), y(.38f)), Size(ancho * .27f, alto * .44f),
+                    androidx.compose.ui.geometry.CornerRadius(ancho * .08f)
+                )
+                repeat(3) { i ->
+                    val fx = .60f + i * .085f
+                    drawLine(color, Offset(x(fx), y(.76f)), Offset(x(fx), y(.92f)), ancho * .045f, cap = StrokeCap.Round)
+                }
+            }
+        }
+        TipoPrenda.BOTAS -> {
+            listOf(.08f, .55f).forEach { fx ->
+                val altoBota = if (estilo in listOf(
+                        EstiloPrenda.SANDALIAS, EstiloPrenda.PANTUFLAS,
+                        EstiloPrenda.ZAPATILLAS, EstiloPrenda.TENIS
+                    )
+                ) .48f else .22f
+                val bota = Path().apply {
+                    moveTo(x(fx), y(altoBota)); lineTo(x(fx + .28f), y(altoBota))
+                    lineTo(x(fx + .28f), y(.62f)); lineTo(x(fx + .39f), y(.68f))
+                    quadraticTo(x(fx + .43f), y(.72f), x(fx + .38f), y(.84f))
+                    lineTo(x(fx), y(.84f)); close()
+                }
+                drawPath(bota, color)
+                if (estilo !in listOf(EstiloPrenda.SANDALIAS, EstiloPrenda.PANTUFLAS)) {
+                    drawRoundRect(
+                        color, Offset(x(fx - .025f), y(.16f)), Size(ancho * .33f, alto * .17f),
+                        androidx.compose.ui.geometry.CornerRadius(ancho * .06f)
+                    )
+                }
+                drawLine(
+                    borde, Offset(x(fx), y(.84f)), Offset(x(fx + .38f), y(.84f)),
+                    strokeWidth = ancho * .045f, cap = StrokeCap.Round
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun ReiConRopa(prendas: List<Prenda>, puestas: Set<TipoPrenda>, modifier: Modifier) {
-    val colorDe = { tipo: TipoPrenda -> prendas.firstOrNull { it.tipo == tipo }?.color }
+    val prendaDe = { tipo: TipoPrenda -> prendas.firstOrNull { it.tipo == tipo } }
     Canvas(modifier) {
         val w = size.width; val h = size.height
         val piel = Color(0xFFFFD7BC)
@@ -1519,25 +1668,14 @@ private fun ReiConRopa(prendas: List<Prenda>, puestas: Set<TipoPrenda>, modifier
         drawCircle(Color(0xFFFF9FA8).copy(.65f), radius = w*.035f, center = Offset(w*.63f, h*.37f))
         drawArc(Tinta, 18f, 144f, false, Offset(w*.44f,h*.34f), Size(w*.12f,h*.08f),
             style = Stroke(w*.012f, cap = StrokeCap.Round))
-        if (TipoPrenda.GORRO in puestas) colorDe(TipoPrenda.GORRO)?.let { color ->
-            drawArc(color, 180f, 180f, true, Offset(w*.27f,h*.04f), Size(w*.46f,h*.34f))
-            drawRoundRect(color, Offset(w*.25f,h*.19f), Size(w*.50f,h*.08f),
-                androidx.compose.ui.geometry.CornerRadius(w*.04f))
-            drawCircle(Color.White.copy(.9f), radius=w*.055f, center=Offset(w*.5f,h*.045f))
+        if (TipoPrenda.GORRO in puestas) prendaDe(TipoPrenda.GORRO)?.let { prenda ->
+            dibujarPrenda(prenda.estilo, prenda.color, w * .20f, -h * .04f, w * .56f, h * .56f)
         }
-        if (TipoPrenda.BUFANDA in puestas) colorDe(TipoPrenda.BUFANDA)?.let { color ->
-            drawRoundRect(color, Offset(w*.29f,h*.45f), Size(w*.42f,h*.10f),
-                androidx.compose.ui.geometry.CornerRadius(w*.04f))
-            drawRoundRect(color, Offset(w*.57f,h*.50f), Size(w*.11f,h*.25f),
-                androidx.compose.ui.geometry.CornerRadius(w*.035f))
+        if (TipoPrenda.BUFANDA in puestas) prendaDe(TipoPrenda.BUFANDA)?.let { prenda ->
+            dibujarPrenda(prenda.estilo, prenda.color, w * .18f, h * .40f, w * .60f, h * .56f)
         }
-        if (TipoPrenda.BOTAS in puestas) colorDe(TipoPrenda.BOTAS)?.let { color ->
-            drawRoundRect(color, Offset(w*.34f,h*.82f), Size(w*.15f,h*.16f),
-                androidx.compose.ui.geometry.CornerRadius(w*.04f))
-            drawRoundRect(color, Offset(w*.51f,h*.82f), Size(w*.15f,h*.16f),
-                androidx.compose.ui.geometry.CornerRadius(w*.04f))
-            drawOval(Color.White.copy(.35f), Offset(w*.35f,h*.84f), Size(w*.12f,h*.035f))
-            drawOval(Color.White.copy(.35f), Offset(w*.53f,h*.84f), Size(w*.12f,h*.035f))
+        if (TipoPrenda.BOTAS in puestas) prendaDe(TipoPrenda.BOTAS)?.let { prenda ->
+            dibujarPrenda(prenda.estilo, prenda.color, w * .18f, h * .70f, w * .64f, h * .26f)
         }
     }
 }
@@ -1545,117 +1683,9 @@ private fun ReiConRopa(prendas: List<Prenda>, puestas: Set<TipoPrenda>, modifier
 @Composable
 private fun IconoPrenda(prenda: Prenda, modifier: Modifier) {
     Canvas(modifier) {
-        val w = size.width; val h = size.height
-        val blanco = Color.White
-        val borde = Color(0xFF5B6170).copy(alpha = .62f)
-        when (prenda.tipo) {
-            TipoPrenda.GORRO -> {
-                when (prenda.estilo) {
-                    EstiloPrenda.CORONA -> {
-                        val p=Path().apply {
-                            moveTo(w*.12f,h*.78f); lineTo(w*.12f,h*.28f)
-                            lineTo(w*.34f,h*.53f); lineTo(w*.5f,h*.18f)
-                            lineTo(w*.66f,h*.53f); lineTo(w*.88f,h*.28f)
-                            lineTo(w*.88f,h*.78f); close()
-                        }
-                        drawPath(p, blanco)
-                        drawCircle(borde,w*.035f,Offset(w*.5f,h*.65f))
-                    }
-                    EstiloPrenda.LAZO -> {
-                        drawOval(blanco,Offset(w*.08f,h*.28f),Size(w*.40f,h*.42f))
-                        drawOval(blanco,Offset(w*.52f,h*.28f),Size(w*.40f,h*.42f))
-                        drawCircle(borde,w*.11f,Offset(w*.5f,h*.5f))
-                    }
-                    EstiloPrenda.OREJITAS -> {
-                        drawOval(blanco,Offset(w*.18f,h*.02f),Size(w*.24f,h*.68f))
-                        drawOval(blanco,Offset(w*.58f,h*.02f),Size(w*.24f,h*.68f))
-                        drawRoundRect(blanco,Offset(w*.10f,h*.62f),Size(w*.80f,h*.20f),
-                            androidx.compose.ui.geometry.CornerRadius(w*.1f))
-                    }
-                    EstiloPrenda.SOMBRERO, EstiloPrenda.SOMBRERO_SOL -> {
-                        drawOval(blanco,Offset(w*.04f,h*.57f),Size(w*.92f,h*.25f))
-                        drawRoundRect(blanco,Offset(w*.28f,h*.18f),Size(w*.44f,h*.50f),
-                            androidx.compose.ui.geometry.CornerRadius(w*.12f))
-                        drawLine(borde,Offset(w*.30f,h*.55f),Offset(w*.70f,h*.55f),w*.035f)
-                    }
-                    EstiloPrenda.TIARA -> {
-                        drawArc(blanco,190f,160f,false,Offset(w*.15f,h*.20f),Size(w*.70f,h*.60f),
-                            style=Stroke(w*.11f,cap=StrokeCap.Round))
-                        drawCircle(blanco,w*.10f,Offset(w*.5f,h*.25f))
-                    }
-                    else -> {
-                        drawCircle(blanco,w*.105f,Offset(w*.5f,h*.13f))
-                        drawArc(blanco,180f,180f,true,Offset(w*.16f,h*.18f),Size(w*.68f,h*.82f))
-                        drawRoundRect(blanco,Offset(w*.10f,h*.63f),Size(w*.80f,h*.22f),
-                            androidx.compose.ui.geometry.CornerRadius(w*.10f))
-                    }
-                }
-            }
-            TipoPrenda.BUFANDA -> {
-                when (prenda.estilo) {
-                    EstiloPrenda.COLLAR -> {
-                        drawArc(blanco,15f,150f,false,Offset(w*.16f,h*.12f),Size(w*.68f,h*.62f),
-                            style=Stroke(w*.08f,cap=StrokeCap.Round))
-                        drawCircle(blanco,w*.12f,Offset(w*.5f,h*.68f))
-                    }
-                    EstiloPrenda.CAPA -> {
-                        val p=Path().apply {
-                            moveTo(w*.5f,h*.12f); lineTo(w*.90f,h*.88f)
-                            lineTo(w*.10f,h*.88f); close()
-                        }
-                        drawPath(p,blanco); drawCircle(borde,w*.07f,Offset(w*.5f,h*.2f))
-                    }
-                    EstiloPrenda.MOCHILA -> {
-                        drawRoundRect(blanco,Offset(w*.20f,h*.18f),Size(w*.60f,h*.70f),
-                            androidx.compose.ui.geometry.CornerRadius(w*.16f))
-                        drawRoundRect(borde,Offset(w*.33f,h*.08f),Size(w*.34f,h*.18f),
-                            androidx.compose.ui.geometry.CornerRadius(w*.08f))
-                    }
-                    EstiloPrenda.CHALECO, EstiloPrenda.SUETER, EstiloPrenda.CHAQUETA,
-                    EstiloPrenda.VESTIDO, EstiloPrenda.CAMISETA, EstiloPrenda.IMPERMEABLE -> {
-                        val p=Path().apply {
-                            moveTo(w*.30f,h*.12f); lineTo(w*.08f,h*.32f)
-                            lineTo(w*.23f,h*.52f); lineTo(w*.30f,h*.42f)
-                            lineTo(w*.24f,h*.90f); lineTo(w*.76f,h*.90f)
-                            lineTo(w*.70f,h*.42f); lineTo(w*.77f,h*.52f)
-                            lineTo(w*.92f,h*.32f); lineTo(w*.70f,h*.12f); close()
-                        }
-                        drawPath(p,blanco)
-                        drawLine(borde,Offset(w*.5f,h*.22f),Offset(w*.5f,h*.82f),w*.025f)
-                    }
-                    else -> {
-                        drawRoundRect(blanco,Offset(w*.08f,h*.22f),Size(w*.73f,h*.28f),
-                            androidx.compose.ui.geometry.CornerRadius(w*.12f))
-                        drawRoundRect(blanco,Offset(w*.56f,h*.38f),Size(w*.27f,h*.44f),
-                            androidx.compose.ui.geometry.CornerRadius(w*.08f))
-                        repeat(3) { i ->
-                            val x=w*(.60f+i*.085f)
-                            drawLine(blanco,Offset(x,h*.76f),Offset(x,h*.92f),w*.045f,cap=StrokeCap.Round)
-                        }
-                    }
-                }
-            }
-            TipoPrenda.BOTAS -> {
-                listOf(.08f, .55f).forEach { x ->
-                    val bota = Path().apply {
-                        val alto = if (prenda.estilo in listOf(
-                                EstiloPrenda.SANDALIAS, EstiloPrenda.PANTUFLAS,
-                                EstiloPrenda.ZAPATILLAS, EstiloPrenda.TENIS
-                            )) .48f else .22f
-                        moveTo(w*x, h*alto); lineTo(w*(x+.28f), h*alto)
-                        lineTo(w*(x+.28f), h*.62f); lineTo(w*(x+.39f), h*.68f)
-                        quadraticTo(w*(x+.43f), h*.72f, w*(x+.38f), h*.84f)
-                        lineTo(w*x, h*.84f); close()
-                    }
-                    drawPath(bota, blanco)
-                    if (prenda.estilo !in listOf(EstiloPrenda.SANDALIAS, EstiloPrenda.PANTUFLAS))
-                        drawRoundRect(blanco,Offset(w*(x-.025f),h*.16f),Size(w*.33f,h*.17f),
-                            androidx.compose.ui.geometry.CornerRadius(w*.06f))
-                    drawLine(borde, Offset(w*x,h*.84f), Offset(w*(x+.38f),h*.84f),
-                        strokeWidth=w*.045f, cap=StrokeCap.Round)
-                }
-            }
-        }
+        // Mismo dibujo exacto que ve Rei puesta, en blanco para resaltar sobre el
+        // botón de color: así la bandeja nunca promete algo distinto de lo que pasa.
+        dibujarPrenda(prenda.estilo, Color.White, 0f, 0f, size.width, size.height)
     }
 }
 
