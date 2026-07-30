@@ -9,16 +9,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.random.Random
 
-enum class Forma(val titulo: String) {
+enum class Forma(val titulo: String, val articulo: String = "el") {
     CIRCULO("Círculo"),
     CUADRADO("Cuadrado"),
     TRIANGULO("Triángulo"),
-    ESTRELLA("Estrella"),
+    ESTRELLA("Estrella", "la"),
     CORAZON("Corazón"),
     OVALO("Óvalo"),
+    RECTANGULO("Rectángulo"),
     ROMBO("Rombo"),
     HEXAGONO("Hexágono"),
-    LUNA("Luna")
+    LUNA("Luna", "la")
 }
 
 class FormasViewModel(private val savedState: SavedStateHandle) : ViewModel() {

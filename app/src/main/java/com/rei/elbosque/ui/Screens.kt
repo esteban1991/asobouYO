@@ -406,6 +406,11 @@ fun FormasScreen(
     val escala = remember { Animatable(1f) }
     val giro = remember { Animatable(0f) }
 
+    LaunchedEffect(forma) {
+        delay(500)
+        narrador.decir("Toca ${forma.articulo} ${forma.titulo}")
+    }
+
     Fondo {
         Column(
             Modifier.fillMaxSize(),
@@ -426,12 +431,18 @@ fun FormasScreen(
                             scope.launch {
                                 if (acierto) {
                                     Sonidos.estrella(); premiar()
-                                    narrador.felicitar("¡Yupi! ¡Muy bien, Rei!")
+                                    narrador.felicitar(
+                                        opcion.titulo,
+                                        "¡Yupi! ¡Muy bien, Rei!"
+                                    )
                                     escala.animateTo(1.28f, tween(180))
                                     escala.animateTo(1f, tween(260, easing = FastOutSlowInEasing))
                                 } else {
                                     Sonidos.errorSuave()
-                                    narrador.decir("Oh, no. Intenta otra vez")
+                                    narrador.decirSecuencia(
+                                        opcion.titulo,
+                                        "Oh, no. Busca ${forma.articulo} ${forma.titulo}"
+                                    )
                                     listOf(-7f, 7f, -5f, 5f, 0f).forEach {
                                         giro.animateTo(it, tween(60))
                                     }
@@ -550,6 +561,14 @@ private fun Figura(forma: Forma, modifier: Modifier, color: Color) {
             Forma.CORAZON -> trazarCorazon(w, h)
             Forma.OVALO -> Path().apply {
                 addOval(androidx.compose.ui.geometry.Rect(margen, h * .18f, w - margen, h * .82f))
+            }
+            Forma.RECTANGULO -> Path().apply {
+                addRoundRect(
+                    androidx.compose.ui.geometry.RoundRect(
+                        androidx.compose.ui.geometry.Rect(margen, h * .23f, w - margen, h * .77f),
+                        androidx.compose.ui.geometry.CornerRadius(w * .10f)
+                    )
+                )
             }
             Forma.ROMBO -> Path().apply {
                 moveTo(w / 2f, h * .05f)

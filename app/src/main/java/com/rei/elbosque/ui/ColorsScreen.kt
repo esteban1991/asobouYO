@@ -29,6 +29,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
@@ -43,6 +44,9 @@ import com.rei.elbosque.ui.ReiColores.Fondo1
 import com.rei.elbosque.ui.ReiColores.Fondo2
 import com.rei.elbosque.ui.ReiColores.Tinta as tinta
 import kotlinx.coroutines.delay
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
 fun ColoresScreen(
@@ -143,7 +147,7 @@ fun ColoresScreen(
                                 modifier = Modifier.size(165.dp)
                             )
                         } else {
-                            CaritaColor(opcion.color, Modifier.size(145.dp))
+                            FlorColor(opcion.color, Modifier.size(150.dp))
                         }
                     }
                 }
@@ -153,27 +157,76 @@ fun ColoresScreen(
     }
 }
 
+/**
+ * Una florcita del color pedido: para los colores que todavía no tienen mascota
+ * ilustrada, es más lindo y más "objeto reconocible" que una bola lisa con carita.
+ */
 @Composable
-private fun CaritaColor(color: Color, modifier: Modifier = Modifier) {
+private fun FlorColor(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier) {
-        drawCircle(color)
-        // Contorno suave: sin esto, los colores claros (blanco, beige) se pierden
+        val w = size.width
+        val h = size.height
+        val centro = Offset(w * .5f, h * .42f)
+        val radioPetalo = w * .23f
+        val distancia = w * .21f
+
+        // Tallo y hojita, detrás de los pétalos.
+        drawLine(
+            color = Color(0xFF6FAE6B),
+            start = Offset(centro.x, centro.y + radioPetalo * .5f),
+            end = Offset(w * .5f, h * .95f),
+            strokeWidth = w * .035f,
+            cap = StrokeCap.Round
+        )
+        val hoja = Path().apply {
+            moveTo(w * .5f, h * .78f)
+            quadraticTo(w * .70f, h * .74f, w * .60f, h * .88f)
+            quadraticTo(w * .52f, h * .86f, w * .5f, h * .78f)
+            close()
+        }
+        drawPath(hoja, Color(0xFF7BC47F))
+
+        // Cinco pétalos alrededor del centro.
+        for (i in 0 until 5) {
+            val angulo = (-PI / 2 + i * 2 * PI / 5).toFloat()
+            val posicion = Offset(
+                centro.x + cos(angulo) * distancia,
+                centro.y + sin(angulo) * distancia
+            )
+            drawCircle(color, radius = radioPetalo, center = posicion)
+        }
+        // Brillo suave sobre toda la flor, como si le diera el sol.
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(Color.White.copy(alpha = .38f), Color.Transparent),
+                center = Offset(w * .36f, h * .28f),
+                radius = w * .6f
+            ),
+            radius = w * .48f,
+            center = centro
+        )
+        // Contorno suave: sin esto, los pétalos claros (blanco, beige) se pierden
         // contra el fondo blanco del botón.
+        for (i in 0 until 5) {
+            val angulo = (-PI / 2 + i * 2 * PI / 5).toFloat()
+            val posicion = Offset(
+                centro.x + cos(angulo) * distancia,
+                centro.y + sin(angulo) * distancia
+            )
+            drawCircle(
+                Color.Black.copy(alpha = .12f),
+                radius = radioPetalo,
+                center = posicion,
+                style = Stroke(width = w * .015f)
+            )
+        }
+        // Centro de la flor.
+        drawCircle(Color(0xFFFFE07A), radius = w * .15f, center = centro)
         drawCircle(
             Color.Black.copy(alpha = .14f),
-            radius = size.width / 2f,
-            style = Stroke(width = size.width * .025f)
-        )
-        drawCircle(Color(0xFF3D5360), radius = size.width * .045f, center = Offset(size.width * .37f, size.height * .42f))
-        drawCircle(Color(0xFF3D5360), radius = size.width * .045f, center = Offset(size.width * .63f, size.height * .42f))
-        drawArc(
-            color = Color(0xFF3D5360),
-            startAngle = 20f,
-            sweepAngle = 140f,
-            useCenter = false,
-            topLeft = Offset(size.width * .34f, size.height * .45f),
-            size = Size(size.width * .32f, size.height * .25f),
-            style = Stroke(width = size.width * .035f, cap = StrokeCap.Round)
+            radius = w * .15f,
+            center = centro,
+            style = Stroke(width = w * .02f)
         )
     }
 }
