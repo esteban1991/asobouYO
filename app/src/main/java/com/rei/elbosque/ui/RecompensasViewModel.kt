@@ -36,8 +36,11 @@ class RecompensasViewModel(application: Application) : AndroidViewModel(applicat
 
     /** Evento efímero: la UI muestra confeti una sola vez por desbloqueo. */
     val stickerDesbloqueado = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    /** Evento ligero para animar cada respuesta correcta en cualquier juego. */
+    val aciertoCelebrado = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
 
     fun premiarAcierto() {
+        aciertoCelebrado.tryEmit(Unit)
         viewModelScope.launch {
             if (repository.agregarEstrella()) stickerDesbloqueado.emit(Unit)
         }

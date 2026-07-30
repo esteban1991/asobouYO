@@ -825,3 +825,140 @@ class RitmoViewModel(private val savedState: SavedStateHandle) : ViewModel() {
         return ResultadoRitmo(acierto = true, rondaCompleta = completa)
     }
 }
+
+data class ObjetoMemoria(val nombre: String, @DrawableRes val icono: Int)
+
+private val objetosMemoria = listOf(
+    ObjetoMemoria("Pelota", R.drawable.ic_pelota),
+    ObjetoMemoria("Manzana", R.drawable.ic_manzana),
+    ObjetoMemoria("Osito", R.drawable.ic_osito),
+    ObjetoMemoria("Flor", R.drawable.ic_flor),
+    ObjetoMemoria("Estrella", R.drawable.ic_estrella),
+    ObjetoMemoria("Zapato", R.drawable.ic_zapato),
+    ObjetoMemoria("Plátano", R.drawable.ic_platano),
+    ObjetoMemoria("Sol", R.drawable.ic_sol)
+)
+
+class QueFaltaViewModel(private val savedState: SavedStateHandle) : ViewModel() {
+    private fun nuevaRonda() = objetosMemoria.shuffled().take(3)
+
+    private fun guardarMostrados(lista: List<ObjetoMemoria>) {
+        savedState["quefalta_mostrados"] = ArrayList(lista.map { it.nombre })
+    }
+
+    private val _mostrados = MutableStateFlow(
+        savedState.get<ArrayList<String>>("quefalta_mostrados")
+            ?.mapNotNull { nombre -> objetosMemoria.find { it.nombre == nombre } }
+            ?.takeIf { it.size == 3 }
+            ?: nuevaRonda().also { guardarMostrados(it) }
+    )
+    val mostrados: StateFlow<List<ObjetoMemoria>> = _mostrados
+
+    private val _indiceFaltante = MutableStateFlow(savedState["quefalta_indice"] ?: Random.nextInt(3))
+    val indiceFaltante: StateFlow<Int> = _indiceFaltante
+
+    val faltante: ObjetoMemoria get() = _mostrados.value[_indiceFaltante.value]
+
+    /** Dos objetos que no estaban en la ronda y el correcto, mezclados. */
+    fun opciones(): List<ObjetoMemoria> {
+        val distractores = objetosMemoria.filterNot { it in _mostrados.value }.shuffled().take(2)
+        return (distractores + faltante).shuffled()
+    }
+
+    fun comprobar(objeto: ObjetoMemoria): Boolean {
+        val acierto = objeto == faltante
+        if (acierto) {
+            val nueva = nuevaRonda()
+            _mostrados.value = nueva
+            guardarMostrados(nueva)
+            val nuevoIndice = Random.nextInt(3)
+            _indiceFaltante.value = nuevoIndice
+            savedState["quefalta_indice"] = nuevoIndice
+        }
+        return acierto
+    }
+}
+
+enum class TamanoObjeto(val etiqueta: String, val etiquetaFemenina: String) {
+    CHICO("chico", "chica"),
+    MEDIANO("mediano", "mediana"),
+    GRANDE("grande", "grande")
+}
+
+enum class OrdenTamano { CHICO_A_GRANDE, GRANDE_A_CHICO }
+
+data class ObjetoOrden(val nombre: String, @DrawableRes val icono: Int, val femenino: Boolean = false)
+
+data class ResultadoOrden(val acierto: Boolean, val rondaCompleta: Boolean)
+
+private val objetosOrden = listOf(
+    ObjetoOrden("Pelota", R.drawable.ic_pelota, femenino = true),
+    ObjetoOrden("Manzana", R.drawable.ic_manzana, femenino = true),
+    ObjetoOrden("Estrella", R.drawable.ic_estrella, femenino = true),
+    ObjetoOrden("Osito", R.drawable.ic_osito),
+    ObjetoOrden("Flor", R.drawable.ic_flor, femenino = true)
+)
+
+class OrdenaTamanoViewModel(private val savedState: SavedStateHandle) : ViewModel() {
+    private val _indiceObjeto = MutableStateFlow(savedState["orden_objeto"] ?: Random.nextInt(objetosOrden.size))
+    val objeto: ObjetoOrden get() = objetosOrden[_indiceObjeto.value]
+
+    private val _modo = MutableStateFlow(
+        OrdenTamano.valueOf(savedState["orden_modo"] ?: OrdenTamano.entries.random().name)
+    )
+    val modo: StateFlow<OrdenTamano> = _modo
+
+    // posiciones[casilla] = qué tamaño (0=chico,1=mediano,2=grande) se ve en esa casilla.
+    private val _posiciones = MutableStateFlow(
+        savedState.get<ArrayList<Int>>("orden_posiciones")?.toList() ?: listOf(0, 1, 2).shuffled()
+    )
+    val posiciones: StateFlow<List<Int>> = _posiciones
+
+    private val _progreso = MutableStateFlow(savedState["orden_progreso"] ?: 0)
+    val progreso: StateFlow<Int> = _progreso
+
+    private val secuenciaEsperada: List<Int>
+        get() = if (_modo.value == OrdenTamano.CHICO_A_GRANDE) listOf(0, 1, 2) else listOf(2, 1, 0)
+
+    /** Toca una casilla; si no era la que seguía en el orden, se reinicia la secuencia. */
+    fun tocar(casilla: Int): ResultadoOrden {
+        val tamanoTocado = _posiciones.value[casilla]
+        val tamanoEsperado = secuenciaEsperada[_progreso.value]
+        if (tamanoTocado != tamanoEsperado) {
+            _progreso.value = 0
+            savedState["orden_progreso"] = 0
+            return ResultadoOrden(acierto = false, rondaCompleta = false)
+        }
+        val siguiente = _progreso.value + 1
+        val completa = siguiente >= 3
+        if (completa) {
+            var nuevoIndice: Int
+            do nuevoIndice = Random.nextInt(objetosOrden.size) while (
+                nuevoIndice == _indiceObjeto.value && objetosOrden.size > 1
+            )
+            _indiceObjeto.value = nuevoIndice
+            _modo.value = OrdenTamano.entries.random()
+            _posiciones.value = listOf(0, 1, 2).shuffled()
+            _progreso.value = 0
+            savedState["orden_objeto"] = nuevoIndice
+            savedState["orden_modo"] = _modo.value.name
+            savedState["orden_posiciones"] = ArrayList(_posiciones.value)
+            savedState["orden_progreso"] = 0
+        } else {
+            _progreso.value = siguiente
+            savedState["orden_progreso"] = siguiente
+        }
+        return ResultadoOrden(acierto = true, rondaCompleta = completa)
+    }
+}
+
+class RespiraViewModel(private val savedState: SavedStateHandle) : ViewModel() {
+    private var ciclos = savedState["respira_ciclos"] ?: 0
+
+    /** Se llama al completar un ciclo de inspirar y exhalar; premia cada tres ciclos. */
+    fun completarCiclo(): Boolean {
+        ciclos++
+        savedState["respira_ciclos"] = ciclos
+        return ciclos % 3 == 0
+    }
+}

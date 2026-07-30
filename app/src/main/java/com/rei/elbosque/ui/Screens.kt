@@ -56,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -341,6 +342,15 @@ fun InicioScreen(
                     } }
                     item { BotonMenu(R.drawable.ic_cuchara, "Imita el Ritmo", Menta) {
                         narrador.decir("Imita el ritmo"); onAbrir("ritmo")
+                    } }
+                    item { BotonMenu(R.drawable.ic_regalo, "¿Qué Falta?", Rosa) {
+                        narrador.decir("¿Qué falta?"); onAbrir("que_falta")
+                    } }
+                    item { BotonMenu(R.drawable.ic_libro, "Ordena Tamaños", Color(0xFFFFD66B)) {
+                        narrador.decir("Ordena por tamaño"); onAbrir("ordena_tamano")
+                    } }
+                    item { BotonMenu(R.drawable.ic_paraguas, "Respira", Color(0xFFB8D8F5)) {
+                        narrador.decir("Respira con Rei"); onAbrir("respira")
                     } }
                 }
             }
@@ -887,6 +897,16 @@ fun AlbumScreen(
 ) {
     var stickerSaltando by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val ambiente = rememberInfiniteTransition(label = "stickers vivos")
+    val movimiento by ambiente.animateFloat(
+        initialValue = -1f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1_800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "movimiento del jardín"
+    )
     LaunchedEffect(Unit) {
         delay(600)
         narrador.decir(
@@ -918,11 +938,24 @@ fun AlbumScreen(
                 )
                 recompensas.filter { it.desbloqueado }.forEachIndexed { indice, recompensa ->
                     val salto = if (stickerSaltando == recompensa.nombre) 1.24f else 1f
+                    val escalaAmbiente = if (recompensa.nombre == "Sol") 1f + (movimiento+1f)*.025f else 1f
                     Image(
                         painterResource(recompensa.icono),
                         recompensa.nombre,
                         Modifier.align(lugares[indice % lugares.size])
-                            .padding(18.dp).size(82.dp).scale(salto)
+                            .padding(18.dp).size(82.dp)
+                            .graphicsLayer {
+                                scaleX = salto * escalaAmbiente
+                                scaleY = salto * escalaAmbiente
+                                translationX = if (recompensa.nombre == "Nube") movimiento * 12.dp.toPx() else 0f
+                                translationY = if (recompensa.nombre == "Oso") -((movimiento+1f)*4.dp.toPx()) else 0f
+                                rotationZ = when (recompensa.nombre) {
+                                    "Flor" -> movimiento * 5f
+                                    "Oso" -> movimiento * 2.5f
+                                    else -> 0f
+                                }
+                                alpha = if (recompensa.nombre == "Arcoíris") .88f + (movimiento+1f)*.06f else 1f
+                            }
                             .clickable {
                                 narrador.felicitar("¡${recompensa.nombre}!", "Tu jardín está precioso")
                                 stickerSaltando = recompensa.nombre
@@ -2531,6 +2564,278 @@ fun RitmoScreen(
                     ) { IconoInstrumento(instrumento, Modifier.size(96.dp)) }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun QueFaltaScreen(
+    vm: QueFaltaViewModel,
+    narrador: Narrador,
+    premiar: () -> Unit,
+    onVolver: () -> Unit
+) {
+    val mostrados by vm.mostrados.collectAsStateWithLifecycle()
+    val indiceFaltante by vm.indiceFaltante.collectAsStateWithLifecycle()
+    val opciones = remember(mostrados, indiceFaltante) { vm.opciones() }
+    var mostrarTodo by remember(mostrados, indiceFaltante) { mutableStateOf(true) }
+    var peekId by remember(mostrados, indiceFaltante) { mutableStateOf(0) }
+
+    fun mirarBien() {
+        narrador.decir("Mira bien estos juguetes")
+    }
+
+    LaunchedEffect(mostrados, indiceFaltante, peekId) {
+        mostrarTodo = true
+        delay(500)
+        mirarBien()
+        delay(2_200)
+        mostrarTodo = false
+        Sonidos.pop()
+        narrador.decir("¿Qué falta?")
+    }
+
+    Fondo {
+        Column(
+            Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Cabecera("¿Qué Falta?", onVolver)
+            Text(
+                if (mostrarTodo) "Mira bien" else "¿Qué falta? Toca abajo",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Tinta,
+                textAlign = TextAlign.Center
+            )
+            Row(
+                Modifier.fillMaxWidth().height(150.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                mostrados.forEachIndexed { i, objeto ->
+                    val esElFaltante = i == indiceFaltante
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxSize()
+                            .background(Color.White.copy(.55f), RoundedCornerShape(32.dp))
+                            .clickable(enabled = esElFaltante && !mostrarTodo) { peekId++ },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (mostrarTodo || !esElFaltante) {
+                            Image(
+                                painterResource(objeto.icono),
+                                contentDescription = objeto.nombre,
+                                modifier = Modifier.size(100.dp)
+                            )
+                        } else {
+                            Text("?", fontSize = 50.sp, fontWeight = FontWeight.ExtraBold, color = Tinta.copy(.4f))
+                        }
+                    }
+                }
+            }
+            Row(
+                Modifier.fillMaxWidth().height(150.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                opciones.forEachIndexed { i, objeto ->
+                    Button(
+                        enabled = !mostrarTodo,
+                        onClick = {
+                            if (vm.comprobar(objeto)) {
+                                Sonidos.estrella(); premiar()
+                                narrador.felicitar(objeto.nombre, "¡Sí, eso faltaba!")
+                            } else {
+                                Sonidos.errorSuave()
+                                narrador.decirSecuencia(objeto.nombre, "Oh, no. Intenta de nuevo")
+                            }
+                        },
+                        modifier = Modifier.weight(1f).fillMaxSize(),
+                        shape = RoundedCornerShape(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = listOf(Menta, Rosa, Lila)[i]
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(7.dp)
+                    ) {
+                        Image(
+                            painterResource(objeto.icono),
+                            contentDescription = objeto.nombre,
+                            modifier = Modifier.size(100.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun etiquetaTamano(tamano: TamanoObjeto, femenino: Boolean): String =
+    if (femenino) tamano.etiquetaFemenina else tamano.etiqueta
+
+@Composable
+fun OrdenaTamanoScreen(
+    vm: OrdenaTamanoViewModel,
+    narrador: Narrador,
+    premiar: () -> Unit,
+    onVolver: () -> Unit
+) {
+    val objeto = vm.objeto
+    val modo by vm.modo.collectAsStateWithLifecycle()
+    val posiciones by vm.posiciones.collectAsStateWithLifecycle()
+    val progreso by vm.progreso.collectAsStateWithLifecycle()
+
+    fun preguntar() {
+        val direccion = if (modo == OrdenTamano.CHICO_A_GRANDE) {
+            "del más chico al más grande"
+        } else {
+            "del más grande al más chico"
+        }
+        narrador.decir("Toca ${objeto.nombre} en orden, $direccion")
+    }
+
+    LaunchedEffect(objeto, modo, posiciones) {
+        delay(550)
+        preguntar()
+    }
+
+    Fondo {
+        Column(
+            Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Cabecera("Ordena por Tamaño", onVolver)
+            Button(
+                onClick = { preguntar() },
+                modifier = Modifier.size(90.dp),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(containerColor = Oro)
+            ) { IconoAltavoz(Modifier.size(44.dp)) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                repeat(3) { i ->
+                    Box(
+                        Modifier
+                            .padding(6.dp)
+                            .size(16.dp)
+                            .background(if (i < progreso) Menta else Color.White.copy(.5f), CircleShape)
+                    )
+                }
+            }
+            Row(
+                Modifier.fillMaxWidth().height(220.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                posiciones.forEachIndexed { casilla, tamanoIndice ->
+                    val tamano = TamanoObjeto.entries[tamanoIndice]
+                    val tamanoDp = when (tamano) {
+                        TamanoObjeto.CHICO -> 66.dp
+                        TamanoObjeto.MEDIANO -> 104.dp
+                        TamanoObjeto.GRANDE -> 150.dp
+                    }
+                    Button(
+                        onClick = {
+                            val resultado = vm.tocar(casilla)
+                            if (resultado.acierto) {
+                                narrador.decir(etiquetaTamano(tamano, objeto.femenino))
+                                if (resultado.rondaCompleta) {
+                                    Sonidos.estrella(); premiar()
+                                    narrador.felicitar("¡Muy bien ordenado, Rei!")
+                                }
+                            } else {
+                                Sonidos.errorSuave()
+                                narrador.decir("Oh, no. Empecemos de nuevo")
+                            }
+                        },
+                        modifier = Modifier.size(tamanoDp),
+                        shape = CircleShape,
+                        contentPadding = PaddingValues(6.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = listOf(Menta, Rosa, Lila)[casilla]
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(7.dp)
+                    ) {
+                        Image(
+                            painterResource(objeto.icono),
+                            contentDescription = objeto.nombre,
+                            modifier = Modifier.size(tamanoDp * .68f)
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun CirculoRespiracion(modifier: Modifier) {
+    Canvas(modifier) {
+        drawCircle(
+            brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                colors = listOf(Color(0xFFAEE9D1), Color(0xFF6FCC9B))
+            )
+        )
+        drawCircle(
+            Color.White.copy(alpha = .32f),
+            radius = size.width * .26f,
+            center = Offset(size.width * .36f, size.height * .32f)
+        )
+    }
+}
+
+@Composable
+fun RespiraScreen(
+    vm: RespiraViewModel,
+    narrador: Narrador,
+    premiar: () -> Unit,
+    onVolver: () -> Unit
+) {
+    val escala = remember { Animatable(.6f) }
+    var fase by remember { mutableStateOf("Respira con Rei") }
+
+    LaunchedEffect(Unit) {
+        delay(500)
+        narrador.decir("Vamos a respirar juntos, despacito")
+        delay(1_400)
+        while (true) {
+            fase = "Inspira"
+            narrador.decir("Inspira")
+            escala.animateTo(1.15f, tween(3_600, easing = LinearEasing))
+            fase = "Exhala"
+            narrador.decir("Exhala")
+            escala.animateTo(.6f, tween(3_600, easing = LinearEasing))
+            if (vm.completarCiclo()) {
+                Sonidos.estrella()
+                premiar()
+                narrador.felicitar("¡Qué bien respiras, Rei!")
+                delay(900)
+            }
+        }
+    }
+
+    Fondo {
+        Column(
+            Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Cabecera("Respira con Rei", onVolver)
+            Box(
+                Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CirculoRespiracion(Modifier.size(220.dp).scale(escala.value))
+            }
+            Text(
+                fase,
+                fontSize = 34.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Tinta,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(24.dp))
         }
     }
 }

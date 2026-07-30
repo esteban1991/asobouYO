@@ -44,6 +44,7 @@ import com.rei.elbosque.ui.ClasificarColorViewModel
 import com.rei.elbosque.ui.ColoresScreen
 import com.rei.elbosque.ui.ColoresViewModel
 import com.rei.elbosque.ui.Confetti
+import com.rei.elbosque.ui.CelebracionAcierto
 import com.rei.elbosque.ui.ContarHasta3Screen
 import com.rei.elbosque.ui.ContarHasta3ViewModel
 import com.rei.elbosque.ui.DondeViveScreen
@@ -63,6 +64,12 @@ import com.rei.elbosque.ui.PuzzleScreen
 import com.rei.elbosque.ui.PuzzleViewModel
 import com.rei.elbosque.ui.PlantaScreen
 import com.rei.elbosque.ui.PlantaViewModel
+import com.rei.elbosque.ui.QueFaltaScreen
+import com.rei.elbosque.ui.QueFaltaViewModel
+import com.rei.elbosque.ui.OrdenaTamanoScreen
+import com.rei.elbosque.ui.OrdenaTamanoViewModel
+import com.rei.elbosque.ui.RespiraScreen
+import com.rei.elbosque.ui.RespiraViewModel
 import com.rei.elbosque.ui.QuienDiceEstoScreen
 import com.rei.elbosque.ui.QuienDiceEstoViewModel
 import com.rei.elbosque.ui.RecompensasViewModel
@@ -98,6 +105,7 @@ class MainActivity : ComponentActivity() {
                 val entradaActual by navController.currentBackStackEntryAsState()
                 val lifecycleOwner = LocalLifecycleOwner.current
                 var celebracionId by remember { mutableIntStateOf(0) }
+                var aciertoId by remember { mutableIntStateOf(0) }
 
                 DisposableEffect(Unit) {
                     onDispose {
@@ -140,6 +148,9 @@ class MainActivity : ComponentActivity() {
                         Sonidos.celebracion()
                         narrador.felicitar("¡Yupi! ¡Lo hiciste muy bien, Rei! Tienes un sticker nuevo")
                     }
+                }
+                LaunchedEffect(Unit) {
+                    recompensas.aciertoCelebrado.collect { aciertoId++ }
                 }
 
                 Box(Modifier.fillMaxSize()) {
@@ -296,12 +307,33 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             }
                         }
+                        composable("que_falta") {
+                            val vm: QueFaltaViewModel = viewModel()
+                            QueFaltaScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
+                        composable("ordena_tamano") {
+                            val vm: OrdenaTamanoViewModel = viewModel()
+                            OrdenaTamanoScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
+                        composable("respira") {
+                            val vm: RespiraViewModel = viewModel()
+                            RespiraScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
                     }
                     if (celebracionId > 0) {
                         Confetti(key = celebracionId) {
                             // El propio efecto desaparece después de tres segundos.
                             celebracionId = 0
                         }
+                    }
+                    if (aciertoId > 0) {
+                        CelebracionAcierto(key = aciertoId) { aciertoId = 0 }
                     }
                 }
             }
