@@ -1390,6 +1390,27 @@ fun GrandePequenoScreen(
     }
 }
 
+private fun DrawScope.dibujarAroCanasta(color: Color) {
+    val w = size.width; val h = size.height
+    drawRoundRect(
+        Color.White.copy(.85f), Offset(w * .16f, 0f), Size(w * .68f, h * .26f),
+        androidx.compose.ui.geometry.CornerRadius(w * .04f)
+    )
+    drawRoundRect(
+        color, Offset(w * .34f, h * .06f), Size(w * .32f, h * .14f),
+        androidx.compose.ui.geometry.CornerRadius(w * .02f), style = Stroke(w * .018f)
+    )
+    drawOval(color, Offset(w * .18f, h * .24f), Size(w * .64f, h * .11f), style = Stroke(w * .045f))
+    val puntos = 6
+    val puntaRed = Offset(w * .5f, h * .82f)
+    for (i in 0 until puntos) {
+        val fx = .22f + i * (.56f / (puntos - 1))
+        drawLine(color.copy(alpha = .55f), Offset(w * fx, h * .30f), puntaRed, strokeWidth = w * .010f)
+    }
+    drawLine(color.copy(.45f), Offset(w * .30f, h * .48f), Offset(w * .70f, h * .48f), w * .008f)
+    drawLine(color.copy(.45f), Offset(w * .37f, h * .64f), Offset(w * .63f, h * .64f), w * .008f)
+}
+
 @Composable
 fun ClasificarColorScreen(
     vm: ClasificarColorViewModel,
@@ -1400,6 +1421,9 @@ fun ClasificarColorScreen(
     val indice by vm.indice.collectAsStateWithLifecycle()
     val objetivo = vm.objetivo
     val cestas = remember(indice) { vm.cestas() }
+    val scope = rememberCoroutineScope()
+    var cestaAcertada by remember { mutableStateOf(-1) }
+    val caida = remember { Animatable(0f) }
 
     fun preguntar() {
         narrador.decir("Lleva la pelota a la cesta ${objetivo.femenino}")
@@ -1432,30 +1456,49 @@ fun ClasificarColorScreen(
                 textAlign = TextAlign.Center
             )
             Row(
-                Modifier.fillMaxWidth().height(200.dp),
+                Modifier.fillMaxWidth().height(210.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                cestas.forEach { cesta ->
+                cestas.forEachIndexed { i, cesta ->
+                    val colorPelota = objetivo.color
                     Button(
                         onClick = {
                             if (vm.comprobar(cesta)) {
-                                Sonidos.estrella(); premiar()
-                                narrador.felicitar("¡Sí!", "Cesta ${cesta.femenino}")
+                                cestaAcertada = i
+                                scope.launch {
+                                    caida.snapTo(0f)
+                                    caida.animateTo(1f, tween(480, easing = FastOutSlowInEasing))
+                                    Sonidos.canasta()
+                                    premiar()
+                                    narrador.felicitar("¡Encestaste!", "Cesta ${cesta.femenino}")
+                                    delay(400)
+                                    cestaAcertada = -1
+                                }
                             } else {
                                 Sonidos.errorSuave()
                                 narrador.decir("Oh, no. Busca la cesta ${objetivo.femenino}")
                             }
                         },
                         modifier = Modifier.weight(1f).fillMaxSize(),
-                        shape = RoundedCornerShape(
-                            topStart = 16.dp,
-                            topEnd = 16.dp,
-                            bottomEnd = 40.dp,
-                            bottomStart = 40.dp
-                        ),
-                        colors = ButtonDefaults.buttonColors(containerColor = cesta.color),
+                        contentPadding = PaddingValues(4.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(.35f)),
                         elevation = ButtonDefaults.buttonElevation(7.dp)
-                    ) {}
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                            Canvas(Modifier.fillMaxSize()) { dibujarAroCanasta(cesta.color) }
+                            if (cestaAcertada == i) {
+                                Box(
+                                    Modifier
+                                        .padding(top = 4.dp)
+                                        .offset(y = (caida.value * 100f).dp)
+                                        .size(30.dp)
+                                        .alpha(1f - caida.value * .6f)
+                                        .background(colorPelota, CircleShape)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1710,53 +1753,132 @@ private fun ReiConRopa(prendas: List<Prenda>, puestas: Set<TipoPrenda>, modifier
         drawCircle(Color(0xFFFF9FA8).copy(.65f), radius = w*.035f, center = Offset(w*.63f, h*.37f))
         drawArc(Tinta, 18f, 144f, false, Offset(w*.44f,h*.34f), Size(w*.12f,h*.08f),
             style = Stroke(w*.012f, cap = StrokeCap.Round))
-        // Nota: en el cuerpo de Rei se usa siempre la misma silueta genérica por
-        // categoría (no el dibujo exacto de cada estilo). Intentar encajar las 30
-        // formas de la bandeja sobre el cuerpo real, con cajas inventadas sin poder
-        // verlas, fue lo que rompió la vestimenta. El color sí siempre coincide.
+        // Familias de estilo reconocibles (no las 30 formas exactas de la bandeja),
+        // todas construidas sobre las mismas zonas del cuerpo ya probadas: cabeza
+        // (centro w*.5,h*.29-.32 radio ~w*.2-.235), torso (w*.30-.70, h*.47-.81) y
+        // piernas (x .39/.52, h*.73-.93). Así una tiara ya no se ve igual que un
+        // gorro, ni un impermeable igual que una bufanda, sin arriesgar posiciones
+        // inventadas para cada uno de los 30 estilos.
         if (TipoPrenda.GORRO in puestas) prendaDe(TipoPrenda.GORRO)?.let { prenda ->
             val color = prenda.color
-            if (prenda.estilo == EstiloPrenda.CORONA) {
-                val corona = Path().apply {
-                    moveTo(w * .27f, h * .38f); lineTo(w * .27f, h * .20f)
-                    lineTo(w * .38f, h * .30f); lineTo(w * .5f, h * .10f)
-                    lineTo(w * .62f, h * .30f); lineTo(w * .73f, h * .20f)
-                    lineTo(w * .73f, h * .38f); close()
+            when (prenda.estilo) {
+                EstiloPrenda.CORONA -> {
+                    val corona = Path().apply {
+                        moveTo(w * .27f, h * .38f); lineTo(w * .27f, h * .20f)
+                        lineTo(w * .38f, h * .30f); lineTo(w * .5f, h * .10f)
+                        lineTo(w * .62f, h * .30f); lineTo(w * .73f, h * .20f)
+                        lineTo(w * .73f, h * .38f); close()
+                    }
+                    drawPath(corona, color)
+                    drawCircle(Color.White.copy(.9f), radius = w * .03f, center = Offset(w * .5f, h * .14f))
                 }
-                drawPath(corona, color)
-                drawCircle(Color.White.copy(.9f), radius = w * .03f, center = Offset(w * .5f, h * .14f))
-            } else {
-                drawArc(color, 180f, 180f, true, Offset(w * .27f, h * .04f), Size(w * .46f, h * .34f))
-                drawRoundRect(
-                    color, Offset(w * .25f, h * .19f), Size(w * .50f, h * .08f),
-                    androidx.compose.ui.geometry.CornerRadius(w * .04f)
-                )
-                drawCircle(Color.White.copy(.9f), radius = w * .055f, center = Offset(w * .5f, h * .045f))
+                EstiloPrenda.TIARA -> {
+                    drawArc(
+                        color, 200f, 140f, false, Offset(w * .30f, h * .05f), Size(w * .40f, h * .30f),
+                        style = Stroke(w * .045f, cap = StrokeCap.Round)
+                    )
+                    drawCircle(Color.White.copy(.9f), radius = w * .028f, center = Offset(w * .5f, h * .09f))
+                }
+                EstiloPrenda.LAZO -> {
+                    drawOval(color, Offset(w * .32f, h * .07f), Size(w * .18f, h * .13f))
+                    drawOval(color, Offset(w * .50f, h * .07f), Size(w * .18f, h * .13f))
+                    drawCircle(color, w * .035f, Offset(w * .5f, h * .135f))
+                }
+                EstiloPrenda.OREJITAS -> {
+                    drawCircle(color, w * .075f, Offset(w * .35f, h * .07f))
+                    drawCircle(color, w * .075f, Offset(w * .65f, h * .07f))
+                    drawRoundRect(
+                        color, Offset(w * .33f, h * .16f), Size(w * .34f, h * .05f),
+                        androidx.compose.ui.geometry.CornerRadius(w * .025f)
+                    )
+                }
+                EstiloPrenda.SOMBRERO, EstiloPrenda.SOMBRERO_SOL -> {
+                    drawOval(color, Offset(w * .14f, h * .15f), Size(w * .72f, h * .10f))
+                    drawRoundRect(
+                        color, Offset(w * .36f, h * .01f), Size(w * .28f, h * .16f),
+                        androidx.compose.ui.geometry.CornerRadius(w * .06f)
+                    )
+                }
+                else -> {
+                    drawArc(color, 180f, 180f, true, Offset(w * .27f, h * .04f), Size(w * .46f, h * .34f))
+                    drawRoundRect(
+                        color, Offset(w * .25f, h * .19f), Size(w * .50f, h * .08f),
+                        androidx.compose.ui.geometry.CornerRadius(w * .04f)
+                    )
+                    drawCircle(Color.White.copy(.9f), radius = w * .055f, center = Offset(w * .5f, h * .045f))
+                }
             }
         }
         if (TipoPrenda.BUFANDA in puestas) prendaDe(TipoPrenda.BUFANDA)?.let { prenda ->
             val color = prenda.color
-            drawRoundRect(
-                color, Offset(w * .29f, h * .45f), Size(w * .42f, h * .10f),
-                androidx.compose.ui.geometry.CornerRadius(w * .04f)
-            )
-            drawRoundRect(
-                color, Offset(w * .57f, h * .50f), Size(w * .11f, h * .25f),
-                androidx.compose.ui.geometry.CornerRadius(w * .035f)
-            )
+            when (prenda.estilo) {
+                EstiloPrenda.COLLAR -> {
+                    drawArc(
+                        color, 20f, 140f, false, Offset(w * .36f, h * .43f), Size(w * .28f, h * .16f),
+                        style = Stroke(w * .03f, cap = StrokeCap.Round)
+                    )
+                    drawCircle(color, w * .028f, Offset(w * .5f, h * .565f))
+                }
+                EstiloPrenda.CAPA -> {
+                    val capa = Path().apply {
+                        moveTo(w * .5f, h * .44f); lineTo(w * .74f, h * .82f)
+                        lineTo(w * .26f, h * .82f); close()
+                    }
+                    drawPath(capa, color)
+                    drawCircle(color, w * .03f, Offset(w * .5f, h * .445f))
+                }
+                EstiloPrenda.MOCHILA -> {
+                    drawRoundRect(
+                        color, Offset(w * .66f, h * .50f), Size(w * .17f, h * .27f),
+                        androidx.compose.ui.geometry.CornerRadius(w * .05f)
+                    )
+                    drawRoundRect(
+                        color.copy(alpha = .75f), Offset(w * .69f, h * .46f), Size(w * .11f, h * .09f),
+                        androidx.compose.ui.geometry.CornerRadius(w * .03f)
+                    )
+                }
+                EstiloPrenda.CHALECO, EstiloPrenda.SUETER, EstiloPrenda.CHAQUETA,
+                EstiloPrenda.VESTIDO, EstiloPrenda.CAMISETA, EstiloPrenda.IMPERMEABLE -> {
+                    val alto = if (prenda.estilo == EstiloPrenda.VESTIDO) h * .48f else h * .40f
+                    drawRoundRect(
+                        color, Offset(w * .24f, h * .44f), Size(w * .52f, alto),
+                        androidx.compose.ui.geometry.CornerRadius(w * .08f)
+                    )
+                    drawLine(
+                        Color.White.copy(.35f), Offset(w * .5f, h * .46f), Offset(w * .5f, h * .44f + alto - h * .02f),
+                        strokeWidth = w * .018f
+                    )
+                }
+                else -> {
+                    drawRoundRect(
+                        color, Offset(w * .29f, h * .45f), Size(w * .42f, h * .10f),
+                        androidx.compose.ui.geometry.CornerRadius(w * .04f)
+                    )
+                    drawRoundRect(
+                        color, Offset(w * .57f, h * .50f), Size(w * .11f, h * .25f),
+                        androidx.compose.ui.geometry.CornerRadius(w * .035f)
+                    )
+                }
+            }
         }
         if (TipoPrenda.BOTAS in puestas) prendaDe(TipoPrenda.BOTAS)?.let { prenda ->
             val color = prenda.color
+            val bajos = prenda.estilo in listOf(
+                EstiloPrenda.SANDALIAS, EstiloPrenda.PANTUFLAS,
+                EstiloPrenda.ZAPATILLAS, EstiloPrenda.TENIS
+            )
+            val altoCalzado = if (bajos) h * .10f else h * .16f
+            val inicioY = if (bajos) h * .88f else h * .82f
             drawRoundRect(
-                color, Offset(w * .34f, h * .82f), Size(w * .15f, h * .16f),
+                color, Offset(w * .34f, inicioY), Size(w * .15f, altoCalzado),
                 androidx.compose.ui.geometry.CornerRadius(w * .04f)
             )
             drawRoundRect(
-                color, Offset(w * .51f, h * .82f), Size(w * .15f, h * .16f),
+                color, Offset(w * .51f, inicioY), Size(w * .15f, altoCalzado),
                 androidx.compose.ui.geometry.CornerRadius(w * .04f)
             )
-            drawOval(Color.White.copy(.35f), Offset(w * .35f, h * .84f), Size(w * .12f, h * .035f))
-            drawOval(Color.White.copy(.35f), Offset(w * .53f, h * .84f), Size(w * .12f, h * .035f))
+            drawOval(Color.White.copy(.35f), Offset(w * .35f, inicioY + h * .02f), Size(w * .12f, h * .035f))
+            drawOval(Color.White.copy(.35f), Offset(w * .53f, inicioY + h * .02f), Size(w * .12f, h * .035f))
         }
     }
 }

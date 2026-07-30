@@ -172,6 +172,23 @@ object Sonidos {
         duracion = 1.45,
         volumen = .20
     )
+
+    /** Silbato de vapor alegre para anunciar que el tren llega a la estación. */
+    fun trenLlega() = reproducirMelodia(
+        notas = listOf(659.3 to 0.0, 784.0 to .12, 659.3 to .42, 987.8 to .58),
+        duracion = 1.35,
+        volumen = .18
+    )
+
+    /** Ruedas que aceleran y un último silbato cuando parte. */
+    fun trenParte() = reproducirMelodia(
+        notas = listOf(
+            196.0 to 0.0, 196.0 to .22, 220.0 to .42, 220.0 to .60,
+            261.6 to .77, 329.6 to .92, 784.0 to 1.08
+        ),
+        duracion = 1.85,
+        volumen = .20
+    )
     /** Acorde ascendente brillante, parecido a tres estrellitas mágicas. */
     fun estrella() = reproducirMelodia(
         notas = listOf(1046.5 to 0.00, 1318.5 to 0.12, 1568.0 to 0.24),
@@ -251,6 +268,29 @@ object Sonidos {
             }
 
             muestras[i] = aMuestra(mezcla * .34)
+        }
+        reproducirMuestras(muestras, duracion)
+    }
+
+    /** El "shhh" de la pelota rozando la red y un golpecito grave del aro: ¡encestó! */
+    fun canasta() {
+        val duracion = .38
+        val total = (frecuenciaMuestreo * duracion).toInt()
+        val muestras = ShortArray(total)
+        val ruido = kotlin.random.Random(System.nanoTime())
+        for (i in 0 until total) {
+            val t = i.toDouble() / frecuenciaMuestreo
+            var mezcla = 0.0
+            // Swish de la red: un soplido de ruido que crece y se apaga.
+            val progresoSwish = (t / 0.30).coerceIn(0.0, 1.0)
+            val envolventeSwish = kotlin.math.sin(progresoSwish * Math.PI)
+            mezcla += ruido.nextDouble(-1.0, 1.0) * envolventeSwish * .30
+            // Golpecito grave: la pelota tocando el aro al pasar.
+            if (t >= .20) {
+                val t2 = t - .20
+                mezcla += kotlin.math.sin(2.0 * Math.PI * 170.0 * t2) * kotlin.math.exp(-t2 * 18.0) * .55
+            }
+            muestras[i] = aMuestra(mezcla * .45)
         }
         reproducirMuestras(muestras, duracion)
     }
