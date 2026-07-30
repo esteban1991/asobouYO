@@ -57,7 +57,9 @@ class PlantaViewModel(private val saved: SavedStateHandle) : ViewModel() {
 
     fun nuevaSemilla() {
         _etapa.value = 0
-        _variedad.value = (_variedad.value + 1) % 5
+        var siguiente:Int
+        do siguiente=kotlin.random.Random.nextInt(5) while(siguiente==_variedad.value)
+        _variedad.value = siguiente
         saved["planta_etapa"] = 0
         saved["planta_variedad"] = _variedad.value
     }

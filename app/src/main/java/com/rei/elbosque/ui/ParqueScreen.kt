@@ -130,7 +130,9 @@ class TrenParqueViewModel(private val saved: SavedStateHandle) : ViewModel() {
     }
     fun siguienteEstacion() {
         _paso.value = 0
-        _estacion.value = (_estacion.value + 1) % estaciones.size
+        var siguiente:Int
+        do siguiente=kotlin.random.Random.nextInt(estaciones.size) while(siguiente==_estacion.value)
+        _estacion.value = siguiente
         saved["tren_paso"] = 0
         saved["tren_estacion"] = _estacion.value
     }

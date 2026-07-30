@@ -84,7 +84,8 @@ class AlimentaAnimalViewModel(private val saved: SavedStateHandle) : ViewModel()
         return opcion == ronda.comida
     }
     fun avanzar() {
-        val nuevo = (_indice.value + 1) % rondas.size
+        var nuevo:Int
+        do nuevo=Random.nextInt(rondas.size) while(nuevo==_indice.value)
         _indice.value = nuevo; saved["alimenta_indice"] = nuevo
     }
 }

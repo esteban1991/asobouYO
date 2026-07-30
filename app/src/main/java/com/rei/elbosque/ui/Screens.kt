@@ -331,9 +331,6 @@ fun InicioScreen(
                     item { BotonMenu(R.drawable.ic_estrella, "Contar", Melon) {
                         narrador.decir("Contar hasta tres"); onAbrir("contar_hasta_3")
                     } }
-                    item { BotonMenu(R.drawable.ic_sol, "Mi rutina", Color(0xFFFFD66B)) {
-                        narrador.decir("Mi rutina"); onAbrir("rutina_diaria")
-                    } }
                     item { BotonMenu(R.drawable.ic_nube, "¿Dónde vive?", Lila) {
                         narrador.decir("¿Dónde vive?"); onAbrir("donde_vive")
                     } }
@@ -349,13 +346,13 @@ fun InicioScreen(
                     item { BotonMenu(R.drawable.ic_libro, "Ordena Tamaños", Color(0xFFFFD66B)) {
                         narrador.decir("Ordena por tamaño"); onAbrir("ordena_tamano")
                     } }
-                    item { BotonMenu(R.drawable.parque_conejo, "Tobogán", Rosa) {
+                    item { BotonMenu(R.drawable.ic_tobogan, "Tobogán", Rosa) {
                         narrador.decir("Tobogán de animales"); onAbrir("tobogan")
                     } }
-                    item { BotonMenu(R.drawable.parque_caballo, "Carrusel", Color(0xFFFFD66B)) {
+                    item { BotonMenu(R.drawable.ic_carrusel, "Carrusel", Color(0xFFFFD66B)) {
                         narrador.decir("Carrusel de animales"); onAbrir("carrusel")
                     } }
-                    item { BotonMenu(R.drawable.parque_elefante, "Tren", Menta) {
+                    item { BotonMenu(R.drawable.tren_contraste, "Tren", Menta) {
                         narrador.decir("Tren del parque"); onAbrir("tren_parque")
                     } }
                 }
