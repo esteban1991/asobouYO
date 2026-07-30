@@ -388,12 +388,24 @@ class BurbujasViewModel(private val savedState: SavedStateHandle) : ViewModel() 
         Color(0xFF6FCC9B), Color(0xFF55A9E8), Color(0xFFF39ABC),
         Color(0xFFFFD45F), Color(0xFF9B7ED9), Color(0xFFF5A15D)
     )
+    // Un "mazo" que reparte los 6 colores sin repetir hasta agotarlos: con solo
+    // .random() independiente, 5 burbujas de 6 colores posibles casi siempre
+    // repetían color por puro azar (problema del cumpleaños).
+    private var bolsaColores = coloresBurbuja.shuffled().toMutableList()
+
+    private fun siguienteColor(): Color {
+        if (bolsaColores.isEmpty()) bolsaColores = coloresBurbuja.shuffled().toMutableList()
+        return bolsaColores.removeAt(0)
+    }
+
     private var siguienteId = savedState["burbuja_id"] ?: 0
     private var reventadas = savedState["burbujas_reventadas"] ?: 0
     val totalReventadas: Int get() = reventadas
 
     /** Reintenta unas pocas veces para que las burbujas no queden pegadas entre sí. */
     private fun nuevaBurbuja(existentes: List<Burbuja>): Burbuja {
+        val color = siguienteColor()
+        val radio = listOf(.11f, .14f, .17f).random()
         var candidata: Burbuja
         var intentos = 0
         do {
@@ -401,8 +413,8 @@ class BurbujasViewModel(private val savedState: SavedStateHandle) : ViewModel() 
                 id = siguienteId,
                 x = Random.nextFloat() * .74f + .06f,
                 y = Random.nextFloat() * .58f + .06f,
-                color = coloresBurbuja.random(),
-                radio = listOf(.11f, .14f, .17f).random()
+                color = color,
+                radio = radio
             )
             intentos++
         } while (
