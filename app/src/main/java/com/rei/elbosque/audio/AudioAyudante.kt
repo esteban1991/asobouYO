@@ -180,30 +180,82 @@ object Sonidos {
         volumen = .16
     )
 
+    private val frecuenciaMuestreo = 44_100
+
     private fun reproducirMelodia(
         notas: List<Pair<Double, Double>>,
         duracion: Double,
         volumen: Double
     ) {
-        Thread {
-            val frecuenciaMuestreo = 44_100
-            val total = (frecuenciaMuestreo * duracion).toInt()
-            val muestras = ShortArray(total)
-            for (i in 0 until total) {
-                val tiempo = i.toDouble() / frecuenciaMuestreo
-                var mezcla = 0.0
-                notas.forEach { (frecuencia, inicio) ->
-                    if (tiempo >= inicio) {
-                        val edad = tiempo - inicio
-                        val envolvente = kotlin.math.exp(-edad * 5.2)
-                        mezcla += kotlin.math.sin(2.0 * Math.PI * frecuencia * edad) * envolvente
-                    }
+        val total = (frecuenciaMuestreo * duracion).toInt()
+        val muestras = ShortArray(total)
+        for (i in 0 until total) {
+            val tiempo = i.toDouble() / frecuenciaMuestreo
+            var mezcla = 0.0
+            notas.forEach { (frecuencia, inicio) ->
+                if (tiempo >= inicio) {
+                    val edad = tiempo - inicio
+                    val envolvente = kotlin.math.exp(-edad * 5.2)
+                    mezcla += kotlin.math.sin(2.0 * Math.PI * frecuencia * edad) * envolvente
                 }
-                muestras[i] = (mezcla * volumen * Short.MAX_VALUE)
-                    .coerceIn(Short.MIN_VALUE.toDouble(), Short.MAX_VALUE.toDouble())
-                    .toInt()
-                    .toShort()
             }
+            muestras[i] = aMuestra(mezcla * volumen)
+        }
+        reproducirMuestras(muestras, duracion)
+    }
+
+    /** Chasquido breve y agudo: toque suave confirmado, sin ser una burbuja. */
+    fun pop() = reproducirMelodia(
+        notas = listOf(1600.0 to 0.00, 2200.0 to 0.03),
+        duracion = .14,
+        volumen = .20
+    )
+
+    /**
+     * El "plop" real de una burbuja de jabón: un golpe de aire breve, un barrido de
+     * tono descendente rápido y una chispita aguda al final para que suene dulce
+     * y no solo un golpe seco.
+     */
+    fun burbuja() {
+        val duracion = .22
+        val total = (frecuenciaMuestreo * duracion).toInt()
+        val muestras = ShortArray(total)
+        val ruido = kotlin.random.Random(System.nanoTime())
+        for (i in 0 until total) {
+            val t = i.toDouble() / frecuenciaMuestreo
+            var mezcla = 0.0
+
+            // Golpe de aire: un chasquido de ruido brevísimo, como el "clic" del estallido.
+            if (t < 0.012) {
+                mezcla += ruido.nextDouble(-1.0, 1.0) * kotlin.math.exp(-t * 220.0) * .45
+            }
+
+            // El "plop": la frecuencia cae rápido de agudo a grave, como el aire escapando.
+            val progresoPlop = (t / 0.09).coerceAtMost(1.0)
+            val frecuenciaPlop = 1500.0 - progresoPlop * 950.0
+            mezcla += kotlin.math.sin(2.0 * Math.PI * frecuenciaPlop * t) *
+                kotlin.math.exp(-t * 24.0) * .8
+
+            // Una chispita cristalina justo después, para que suene bonito y no solo seco.
+            if (t >= 0.05) {
+                val t2 = t - 0.05
+                val envolvente = kotlin.math.exp(-t2 * 13.0)
+                mezcla += kotlin.math.sin(2.0 * Math.PI * 2100.0 * t2) * envolvente * .30
+                mezcla += kotlin.math.sin(2.0 * Math.PI * 2800.0 * t2) * envolvente * .18
+            }
+
+            muestras[i] = aMuestra(mezcla * .34)
+        }
+        reproducirMuestras(muestras, duracion)
+    }
+
+    private fun aMuestra(valor: Double): Short = (valor * Short.MAX_VALUE)
+        .coerceIn(Short.MIN_VALUE.toDouble(), Short.MAX_VALUE.toDouble())
+        .toInt()
+        .toShort()
+
+    private fun reproducirMuestras(muestras: ShortArray, duracion: Double) {
+        Thread {
             val pista = AudioTrack.Builder()
                 .setAudioAttributes(
                     AudioAttributes.Builder()
@@ -227,20 +279,6 @@ object Sonidos {
             pista.release()
         }.start()
     }
-
-    /** Chasquido breve y agudo: toque suave confirmado, sin ser una burbuja. */
-    fun pop() = reproducirMelodia(
-        notas = listOf(1600.0 to 0.00, 2200.0 to 0.03),
-        duracion = .14,
-        volumen = .20
-    )
-
-    /** Tres notitas ascendentes y cristalinas: una burbuja reventando con gracia. */
-    fun burbuja() = reproducirMelodia(
-        notas = listOf(1318.5 to 0.00, 1760.0 to 0.035, 2349.3 to 0.07),
-        duracion = .30,
-        volumen = .19
-    )
 
     /** Pequeña melodía sin archivos ni permisos: tres tonos locales. */
     fun celebracion() = reproducirMelodia(

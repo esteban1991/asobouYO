@@ -1,6 +1,7 @@
 package com.rei.elbosque.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -134,7 +136,15 @@ fun ColoresScreen(
                         shape = RoundedCornerShape(45.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(.82f))
                     ) {
-                        CaritaColor(opcion.color, Modifier.size(145.dp))
+                        if (opcion.icono != null) {
+                            Image(
+                                painter = painterResource(opcion.icono),
+                                contentDescription = opcion.nombre,
+                                modifier = Modifier.size(165.dp)
+                            )
+                        } else {
+                            CaritaColor(opcion.color, Modifier.size(145.dp))
+                        }
                     }
                 }
             }
@@ -147,6 +157,13 @@ fun ColoresScreen(
 private fun CaritaColor(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         drawCircle(color)
+        // Contorno suave: sin esto, los colores claros (blanco, beige) se pierden
+        // contra el fondo blanco del botón.
+        drawCircle(
+            Color.Black.copy(alpha = .14f),
+            radius = size.width / 2f,
+            style = Stroke(width = size.width * .025f)
+        )
         drawCircle(Color(0xFF3D5360), radius = size.width * .045f, center = Offset(size.width * .37f, size.height * .42f))
         drawCircle(Color(0xFF3D5360), radius = size.width * .045f, center = Offset(size.width * .63f, size.height * .42f))
         drawArc(

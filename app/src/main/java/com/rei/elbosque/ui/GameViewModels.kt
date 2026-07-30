@@ -264,17 +264,46 @@ class SombrasViewModel(private val savedState: SavedStateHandle) : ViewModel() {
     }
 }
 
-data class ColorAprendizaje(val nombre: String, val color: Color, val femenino: String = nombre)
+data class ColorAprendizaje(
+    val nombre: String,
+    val color: Color,
+    val femenino: String = nombre,
+    @DrawableRes val icono: Int? = null
+)
 
 class ColoresViewModel(private val savedState: SavedStateHandle) : ViewModel() {
     val colores = listOf(
-        ColorAprendizaje("rojo", Color(0xFFE95D68)),
-        ColorAprendizaje("azul", Color(0xFF55A9E8)),
-        ColorAprendizaje("amarillo", Color(0xFFFFD45F)),
-        ColorAprendizaje("verde", Color(0xFF6FCC9B)),
-        ColorAprendizaje("rosa", Color(0xFFF39ABC)),
-        ColorAprendizaje("naranja", Color(0xFFF5A15D)),
-        ColorAprendizaje("morado", Color(0xFF9B7ED9))
+        ColorAprendizaje("rojo", Color(0xFFE95D68), icono = R.drawable.color_rojo),
+        ColorAprendizaje("azul", Color(0xFF55A9E8), icono = R.drawable.color_azul),
+        ColorAprendizaje("amarillo", Color(0xFFFFD45F), icono = R.drawable.color_amarillo),
+        ColorAprendizaje("verde", Color(0xFF6FCC78), icono = R.drawable.color_verde),
+        ColorAprendizaje("rosa", Color(0xFFF39ABC), icono = R.drawable.color_rosa),
+        ColorAprendizaje("naranja", Color(0xFFF5A15D), icono = R.drawable.color_naranja),
+        ColorAprendizaje("morado", Color(0xFF9B7ED9), icono = R.drawable.color_morado),
+        ColorAprendizaje("turquesa", Color(0xFF42C7C7), icono = R.drawable.color_turquesa),
+        ColorAprendizaje("café", Color(0xFFA87343), icono = R.drawable.color_cafe),
+        ColorAprendizaje("negro", Color(0xFF34383E), icono = R.drawable.color_negro),
+        ColorAprendizaje("blanco", Color(0xFFF8F8F2), icono = R.drawable.color_blanco),
+        ColorAprendizaje("gris", Color(0xFF9DA7AE), icono = R.drawable.color_gris),
+        // Sin mascota ilustrada todavía: usan la carita dibujada como respaldo.
+        ColorAprendizaje("celeste", Color(0xFF8ED8F8)),
+        ColorAprendizaje("violeta", Color(0xFFB37FEA)),
+        ColorAprendizaje("fucsia", Color(0xFFEF5DA8)),
+        ColorAprendizaje("lima", Color(0xFFC6E86B)),
+        ColorAprendizaje("dorado", Color(0xFFF0C94D)),
+        ColorAprendizaje("beige", Color(0xFFE8D3B0)),
+        ColorAprendizaje("índigo", Color(0xFF6A6FD8)),
+        ColorAprendizaje("coral", Color(0xFFFF8C74)),
+        ColorAprendizaje("salmón", Color(0xFFFFA791)),
+        ColorAprendizaje("menta", Color(0xFFA8ECD1)),
+        ColorAprendizaje("lavanda", Color(0xFFD8C6F5)),
+        ColorAprendizaje("mostaza", Color(0xFFE3B23C)),
+        ColorAprendizaje("vino", Color(0xFFA14B5C)),
+        ColorAprendizaje("oliva", Color(0xFFA8AE5A)),
+        ColorAprendizaje("cian", Color(0xFF63D9E0)),
+        ColorAprendizaje("magenta", Color(0xFFE455C4)),
+        ColorAprendizaje("plateado", Color(0xFFC8CDD2)),
+        ColorAprendizaje("esmeralda", Color(0xFF2FBF8F))
     )
 
     private val _indice = MutableStateFlow(

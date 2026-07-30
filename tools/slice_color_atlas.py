@@ -16,7 +16,7 @@ w, h = atlas.size
 for i, name in enumerate(NAMES):
     row, col = divmod(i, 4)
     # Quita el canal blanco que separa las celdas.
-    inset_x, inset_y = int(w / 4 * .018), int(h / 3 * .018)
+    inset_x, inset_y = int(w / 4 * .07), int(h / 3 * .07)
     box = (
         round(col*w/4)+inset_x, round(row*h/3)+inset_y,
         round((col+1)*w/4)-inset_x, round((row+1)*h/3)-inset_y,
@@ -38,3 +38,22 @@ for i, name in enumerate(NAMES):
     icon.thumbnail((460, 460), Image.Resampling.LANCZOS)
     canvas.alpha_composite(icon, ((512-icon.width)//2, (512-icon.height)//2))
     canvas.save(OUTPUT / f"{name}.png", optimize=True)
+
+# La rana se generó sobre magenta para conservar todos sus verdes.
+frog_source = ROOT / "artwork" / "color_verde_magenta.png"
+frog = Image.open(frog_source).convert("RGBA")
+pixels = frog.load()
+for y in range(frog.height):
+    for x in range(frog.width):
+        r, g, b, a = pixels[x, y]
+        dominance = min(r, b) - g
+        if r > 150 and b > 150 and dominance > 55:
+            alpha = max(0, min(255, int(255 * (1 - (dominance-55)/120))))
+            pixels[x, y] = (min(r, g), g, min(b, g), min(a, alpha))
+bounds = frog.getchannel("A").getbbox()
+if bounds:
+    frog = frog.crop(bounds)
+canvas = Image.new("RGBA", (512, 512))
+frog.thumbnail((470, 470), Image.Resampling.LANCZOS)
+canvas.alpha_composite(frog, ((512-frog.width)//2, (512-frog.height)//2))
+canvas.save(OUTPUT / "color_verde.png", optimize=True)
