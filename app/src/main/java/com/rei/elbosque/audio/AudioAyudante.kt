@@ -166,6 +166,23 @@ class Narrador(context: Context) : TextToSpeech.OnInitListener {
 }
 
 object Sonidos {
+    /** Agua suave y continua para acompañar la regadera. */
+    fun agua() {
+        val duracion = 1.35
+        val total = (frecuenciaMuestreo * duracion).toInt()
+        val muestras = ShortArray(total)
+        val ruido = kotlin.random.Random(System.nanoTime())
+        var suavizado = 0.0
+        for (i in 0 until total) {
+            val t = i.toDouble() / frecuenciaMuestreo
+            suavizado = suavizado * .82 + ruido.nextDouble(-1.0, 1.0) * .18
+            val entrada = (t / .12).coerceAtMost(1.0)
+            val salida = ((duracion - t) / .18).coerceIn(0.0, 1.0)
+            val brillo = kotlin.math.sin(2.0 * Math.PI * 1250.0 * t) * .06
+            muestras[i] = aMuestra((suavizado * .22 + brillo) * entrada * salida)
+        }
+        reproducirMuestras(muestras, duracion)
+    }
     /** Melodía breve de carrusel, luminosa y tranquila. */
     fun carrusel() = reproducirMelodia(
         notas = listOf(523.3 to 0.0, 659.3 to .22, 784.0 to .44, 1046.5 to .68, 784.0 to .92),

@@ -1,6 +1,10 @@
 package com.rei.elbosque.ui
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,8 +17,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -28,6 +35,7 @@ import com.rei.elbosque.audio.Narrador
 import com.rei.elbosque.audio.Sonidos
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 data class OpcionVisual(val nombre: String, @DrawableRes val icono: Int)
@@ -149,10 +157,35 @@ fun BuscaObjetoScreen(vm: BuscaObjetoViewModel, narrador: Narrador, premiar: () 
 }
 
 @Composable
+private fun LagrimaAnimal(modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val w = size.width; val h = size.height
+        val gota = Path().apply {
+            moveTo(w * .5f, 0f)
+            cubicTo(w * .95f, h * .55f, w * .82f, h, w * .5f, h)
+            cubicTo(w * .18f, h, w * .05f, h * .55f, w * .5f, 0f)
+            close()
+        }
+        drawPath(gota, Color(0xFF64B5F6))
+        drawCircle(
+            Color.White.copy(.5f), radius = w * .14f,
+            center = androidx.compose.ui.geometry.Offset(w * .36f, h * .60f)
+        )
+    }
+}
+
+@Composable
 fun AlimentaAnimalScreen(vm: AlimentaAnimalViewModel, narrador: Narrador, premiar: () -> Unit, volver: () -> Unit) {
     val indice by vm.indice.collectAsStateWithLifecycle()
     val ronda = vm.ronda
     val opciones = remember(indice) { vm.opciones() }
+    val scope = rememberCoroutineScope()
+    val masticar = remember { Animatable(1f) }
+    val comidaEscala = remember { Animatable(0f) }
+    var comidaVolando by remember { mutableStateOf<OpcionVisual?>(null) }
+    val inclinacion = remember { Animatable(0f) }
+    var triste by remember { mutableStateOf(false) }
+
     LaunchedEffect(indice) {
         delay(550); narrador.decir("Dale ${ronda.comida.nombre} al ${ronda.animal.nombre}")
     }
@@ -162,14 +195,50 @@ fun AlimentaAnimalScreen(vm: AlimentaAnimalViewModel, narrador: Narrador, premia
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         CabeceraNueva("Alimenta al animal", volver)
-        Image(painterResource(ronda.animal.icono), ronda.animal.nombre, Modifier.size(190.dp))
+        Box(Modifier.size(210.dp), contentAlignment = Alignment.Center) {
+            Image(
+                painterResource(ronda.animal.icono), ronda.animal.nombre,
+                modifier = Modifier
+                    .size(190.dp)
+                    .scale(masticar.value)
+                    .rotate(inclinacion.value)
+            )
+            comidaVolando?.let { comida ->
+                Image(
+                    painterResource(comida.icono), null,
+                    modifier = Modifier.size(66.dp).scale(comidaEscala.value)
+                )
+            }
+            if (triste) {
+                LagrimaAnimal(Modifier.size(26.dp).offset(x = (-46).dp, y = 30.dp))
+                LagrimaAnimal(Modifier.size(22.dp).offset(x = 42.dp, y = 40.dp))
+            }
+        }
         OpcionesGrandes(opciones, Modifier.weight(1f)) { opcion ->
             narrador.decir(opcion.nombre)
             if (vm.comprobar(opcion)) {
                 Sonidos.estrella(); premiar()
                 narrador.felicitar("¡Ñam, ñam!", "¡Muy bien, Rei!")
+                comidaVolando = opcion
+                scope.launch {
+                    comidaEscala.snapTo(1f)
+                    comidaEscala.animateTo(0f, tween(420, easing = FastOutSlowInEasing))
+                    comidaVolando = null
+                    repeat(3) {
+                        masticar.animateTo(.82f, tween(90))
+                        masticar.animateTo(1f, tween(90))
+                    }
+                }
             } else {
                 Sonidos.errorSuave(); narrador.decir("Oh, no. Quiere ${ronda.comida.nombre}")
+                scope.launch {
+                    triste = true
+                    inclinacion.animateTo(-10f, tween(140))
+                    inclinacion.animateTo(10f, tween(180))
+                    inclinacion.animateTo(0f, tween(140))
+                    delay(1_000)
+                    triste = false
+                }
             }
         }
     }

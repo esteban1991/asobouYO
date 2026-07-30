@@ -2,11 +2,16 @@ package com.rei.elbosque.ui
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,11 +19,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -129,31 +137,58 @@ fun PlantaScreen(vm: PlantaViewModel, narrador: Narrador, premiar: () -> Unit, v
                 textAlign=TextAlign.Center,color=Color(0xFF3D5360))
             Spacer(Modifier.size(60.dp))
         }
-        Planta(etapa,variedad,crecimiento.value,Modifier.fillMaxWidth().weight(1f))
-        if (etapa < 4) {
-            Button(
-                enabled=!regando,
-                onClick={
-                    if (regando) return@Button
-                    regando=true
-                    val nueva=vm.regar()
-                    narrador.decir(listOf("La semilla bebe agua","¡Salió un brote!","La planta crece","¡Está saliendo una flor!")[nueva-1])
-                    scope.launch {
-                        crecimiento.snapTo(.55f)
-                        crecimiento.animateTo(1f,tween(1_350,easing=FastOutSlowInEasing))
-                        regando=false
-                        if (nueva==4) {
-                            Sonidos.celebracion(); premiar()
-                            narrador.felicitar("¡Qué linda flor creaste, Rei!","Toca la semilla para plantar otra")
-                        }
+        Box(Modifier.fillMaxWidth().weight(1f)) {
+            Planta(etapa,variedad,crecimiento.value,Modifier.fillMaxSize())
+            if (regando) AguaRegadera(Modifier.fillMaxSize())
+            if (etapa < 4) {
+                Column(
+                    Modifier.align(Alignment.BottomEnd).padding(end=8.dp,bottom=4.dp),
+                    horizontalAlignment=Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        if(regando) "¡Está bebiendo!" else "Mantén presionado",
+                        fontSize=22.sp,
+                        fontWeight=FontWeight.ExtraBold,
+                        color=Color(0xFF3D5360),
+                        modifier=Modifier.background(Color.White.copy(.82f),RoundedCornerShape(30.dp)).padding(horizontal=14.dp,vertical=6.dp)
+                    )
+                    Box(
+                        Modifier.size(145.dp)
+                            .graphicsLayer(scaleX=-1f)
+                            .rotate(if(regando) -28f else 0f)
+                            .pointerInput(etapa,regando) {
+                                detectTapGestures(
+                                    onPress = {
+                                        if(regando)return@detectTapGestures
+                                        regando=true
+                                        Sonidos.agua()
+                                        val trabajo=scope.launch {
+                                            delay(1_100)
+                                            val nueva=vm.regar()
+                                            narrador.decir(listOf("La semilla bebió agua","¡Salió un brote!","La planta está creciendo","¡Está saliendo una flor!")[nueva-1])
+                                            crecimiento.snapTo(.55f)
+                                            crecimiento.animateTo(1f,tween(1_450,easing=FastOutSlowInEasing))
+                                            if(nueva==4){
+                                                Sonidos.celebracion();premiar()
+                                                narrador.felicitar("¡Qué linda flor creaste, Rei!","Toca la semilla para plantar otra")
+                                            }
+                                            regando=false
+                                        }
+                                        tryAwaitRelease()
+                                        if(trabajo.isActive)trabajo.cancel()
+                                        regando=false
+                                    }
+                                )
+                            },
+                        contentAlignment=Alignment.Center
+                    ){
+                        Image(painterResource(R.drawable.ic_regadera),"Regadera",Modifier.fillMaxSize())
                     }
-                },
-                modifier=Modifier.fillMaxWidth(.72f).height(115.dp),
-                shape=RoundedCornerShape(50),
-                colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF82D6DD))
-            ) {
-                Image(painterResource(R.drawable.ic_regadera),null,Modifier.size(92.dp))
+                }
             }
+        }
+        if (etapa < 4) {
+            Text("💧 Presiona la regadera",fontSize=26.sp,fontWeight=FontWeight.ExtraBold,color=Color(0xFF397986))
         } else {
             Card(
                 onClick={
@@ -172,5 +207,37 @@ fun PlantaScreen(vm: PlantaViewModel, narrador: Narrador, premiar: () -> Unit, v
             }
         }
         Spacer(Modifier.height(12.dp))
+    }
+}
+
+@Composable
+private fun AguaRegadera(modifier:Modifier=Modifier){
+    val infinito=rememberInfiniteTransition(label="agua")
+    val avance by infinito.animateFloat(
+        initialValue=0f,targetValue=1f,
+        animationSpec=infiniteRepeatable(tween(650),repeatMode=RepeatMode.Restart),
+        label="gotas"
+    )
+    Canvas(modifier){
+        // La regadera está abajo a la derecha; el chorro se curva hacia la tierra.
+        repeat(14){i->
+            val fase=(avance+i/14f)%1f
+            val inicio=Offset(size.width*.78f,size.height*.69f)
+            val fin=Offset(size.width*.53f,size.height*.86f)
+            val x=inicio.x+(fin.x-inicio.x)*fase
+            val y=inicio.y+(fin.y-inicio.y)*fase+40f*kotlin.math.sin(fase*Math.PI).toFloat()
+            val radio=5f+(i%3)*1.5f
+            drawCircle(Color(0xFF4FC3F7).copy(alpha=.78f),radio,Offset(x,y))
+            drawCircle(Color.White.copy(alpha=.62f),radio*.35f,Offset(x-1.5f,y-1.5f))
+        }
+        // Pequeñas salpicaduras al tocar la tierra.
+        repeat(6){i->
+            val fase=(avance+i/6f)%1f
+            drawCircle(
+                Color(0xFF71D5F4).copy(alpha=1f-fase),
+                4f,
+                Offset(size.width*.53f+(i-3)*10f*fase,size.height*.86f-22f*kotlin.math.sin(fase*Math.PI).toFloat())
+            )
+        }
     }
 }
