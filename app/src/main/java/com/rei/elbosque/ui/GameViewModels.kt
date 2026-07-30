@@ -9,13 +9,27 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.random.Random
 
-enum class Forma(val titulo: String) { CIRCULO("Círculo"), CUADRADO("Cuadrado"), TRIANGULO("Triángulo") }
+enum class Forma(val titulo: String) {
+    CIRCULO("Círculo"),
+    CUADRADO("Cuadrado"),
+    TRIANGULO("Triángulo"),
+    ESTRELLA("Estrella"),
+    CORAZON("Corazón"),
+    OVALO("Óvalo"),
+    ROMBO("Rombo"),
+    HEXAGONO("Hexágono"),
+    LUNA("Luna")
+}
 
 class FormasViewModel(private val savedState: SavedStateHandle) : ViewModel() {
     private val _forma = MutableStateFlow(
         Forma.valueOf(savedState["forma"] ?: Forma.entries.random().name)
     )
     val forma: StateFlow<Forma> = _forma
+
+    /** Tres opciones: la correcta y dos distractoras, para que quepan cómodas sin importar cuántas formas haya. */
+    fun opciones(): List<Forma> =
+        (Forma.entries.filterNot { it == _forma.value }.shuffled().take(2) + _forma.value).shuffled()
 
     fun comprobar(elegida: Forma): Boolean {
         val acierto = elegida == _forma.value
@@ -481,7 +495,50 @@ class PuzzleViewModel(private val savedState: SavedStateHandle) : ViewModel() {
 }
 
 enum class TipoPrenda { GORRO, BUFANDA, BOTAS }
-data class Prenda(val tipo: TipoPrenda, val nombre: String, val color: Color, val articulo: String)
+enum class EstiloPrenda(
+    val tipo: TipoPrenda,
+    val nombre: String,
+    val articulo: String
+) {
+    GORRO_LANA(TipoPrenda.GORRO, "gorro de lana", "Un"),
+    SOMBRERO(TipoPrenda.GORRO, "sombrero", "Un"),
+    CORONA(TipoPrenda.GORRO, "corona", "Una"),
+    LAZO(TipoPrenda.GORRO, "lazo", "Un"),
+    BOINA(TipoPrenda.GORRO, "boina", "Una"),
+    GORRA(TipoPrenda.GORRO, "gorra", "Una"),
+    TIARA(TipoPrenda.GORRO, "tiara", "Una"),
+    CAPUCHA(TipoPrenda.GORRO, "capucha", "Una"),
+    SOMBRERO_SOL(TipoPrenda.GORRO, "sombrero de sol", "Un"),
+    OREJITAS(TipoPrenda.GORRO, "orejitas", "Unas"),
+
+    BUFANDA(TipoPrenda.BUFANDA, "bufanda", "Una"),
+    COLLAR(TipoPrenda.BUFANDA, "collar", "Un"),
+    CAPA(TipoPrenda.BUFANDA, "capa", "Una"),
+    CHALECO(TipoPrenda.BUFANDA, "chaleco", "Un"),
+    SUETER(TipoPrenda.BUFANDA, "suéter", "Un"),
+    CHAQUETA(TipoPrenda.BUFANDA, "chaqueta", "Una"),
+    VESTIDO(TipoPrenda.BUFANDA, "vestido", "Un"),
+    CAMISETA(TipoPrenda.BUFANDA, "camiseta", "Una"),
+    IMPERMEABLE(TipoPrenda.BUFANDA, "impermeable", "Un"),
+    MOCHILA(TipoPrenda.BUFANDA, "mochila", "Una"),
+
+    BOTAS(TipoPrenda.BOTAS, "botas", "Unas"),
+    ZAPATOS(TipoPrenda.BOTAS, "zapatos", "Unos"),
+    ZAPATILLAS(TipoPrenda.BOTAS, "zapatillas", "Unas"),
+    SANDALIAS(TipoPrenda.BOTAS, "sandalias", "Unas"),
+    PANTUFLAS(TipoPrenda.BOTAS, "pantuflas", "Unas"),
+    BOTAS_LLUVIA(TipoPrenda.BOTAS, "botas de lluvia", "Unas"),
+    ZAPATOS_FIESTA(TipoPrenda.BOTAS, "zapatos de fiesta", "Unos"),
+    TENIS(TipoPrenda.BOTAS, "tenis", "Unos"),
+    CALCETINES(TipoPrenda.BOTAS, "calcetines", "Unos"),
+    BOTINES(TipoPrenda.BOTAS, "botines", "Unos")
+}
+
+data class Prenda(val estilo: EstiloPrenda, val color: Color) {
+    val tipo get() = estilo.tipo
+    val nombre get() = estilo.nombre
+    val articulo get() = estilo.articulo
+}
 
 class VestirReiViewModel(private val savedState: SavedStateHandle) : ViewModel() {
     private val coloresPrenda = listOf(
@@ -489,13 +546,20 @@ class VestirReiViewModel(private val savedState: SavedStateHandle) : ViewModel()
         Color(0xFF6FCC9B), Color(0xFF9B7ED9)
     )
 
-    private fun prendasAleatorias() = listOf(
-        Prenda(TipoPrenda.GORRO, "gorro", coloresPrenda.random(), articulo = "Un"),
-        Prenda(TipoPrenda.BUFANDA, "bufanda", coloresPrenda.random(), articulo = "Una"),
-        Prenda(TipoPrenda.BOTAS, "botas", coloresPrenda.random(), articulo = "Unas")
-    )
+    private fun prendasAleatorias(anteriores: List<Prenda> = emptyList()) =
+        TipoPrenda.entries.map { tipo ->
+            val anterior = anteriores.firstOrNull { it.tipo == tipo }?.estilo
+            val estilo = EstiloPrenda.entries.filter { it.tipo == tipo && it != anterior }.random()
+            Prenda(estilo, coloresPrenda.random())
+        }
 
-    private val _prendas = MutableStateFlow(prendasAleatorias())
+    private val estilosGuardados = savedState.get<ArrayList<String>>("vestir_estilos")
+    private val _prendas = MutableStateFlow(
+        estilosGuardados?.mapNotNull { nombre ->
+            runCatching { EstiloPrenda.valueOf(nombre) }.getOrNull()
+        }?.takeIf { it.size == 3 }?.map { Prenda(it, coloresPrenda.random()) }
+            ?: prendasAleatorias()
+    )
     val prendas: StateFlow<List<Prenda>> = _prendas
 
     private val _puestas = MutableStateFlow(
@@ -515,8 +579,9 @@ class VestirReiViewModel(private val savedState: SavedStateHandle) : ViewModel()
     val completo: Boolean get() = _puestas.value.size == _prendas.value.size
 
     fun siguienteConjunto() {
-        _prendas.value = prendasAleatorias()
+        _prendas.value = prendasAleatorias(_prendas.value)
         _puestas.value = emptySet()
+        savedState["vestir_estilos"] = ArrayList(_prendas.value.map { it.estilo.name })
         savedState["vestir_puestas"] = arrayListOf<String>()
     }
 }

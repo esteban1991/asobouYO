@@ -14,6 +14,8 @@ import java.util.Locale
 class Narrador(context: Context) : TextToSpeech.OnInitListener {
     private var listo = false
     @Volatile private var protegerColaHasta = 0L
+    @Volatile private var ultimaPeticion = ""
+    @Volatile private var momentoUltimaPeticion = 0L
     private val pendientes = mutableListOf<List<String>>()
     private val motorGoogleDisponible = runCatching {
         context.packageManager.getPackageInfo("com.google.android.tts", 0)
@@ -114,6 +116,15 @@ class Narrador(context: Context) : TextToSpeech.OnInitListener {
     fun decirSecuencia(vararg frases: String) {
         val limpias = frases.filter { it.isNotBlank() }
         if (limpias.isEmpty()) return
+        val ahora = SystemClock.elapsedRealtime()
+        val firma = limpias.joinToString("\u0000")
+        // Un toddler puede tocar tres veces en una fracción de segundo. Un mismo
+        // mensaje se acepta una sola vez para evitar eco y colas interminables.
+        synchronized(this) {
+            if (firma == ultimaPeticion && ahora - momentoUltimaPeticion < 850L) return
+            ultimaPeticion = firma
+            momentoUltimaPeticion = ahora
+        }
         if (!listo) {
             synchronized(pendientes) {
                 pendientes += limpias
@@ -123,6 +134,13 @@ class Narrador(context: Context) : TextToSpeech.OnInitListener {
             return
         }
         reproducir(limpias)
+    }
+
+    /** Vacía cualquier frase pendiente al abandonar una pantalla o juego. */
+    fun detener() {
+        protegerColaHasta = 0L
+        synchronized(pendientes) { pendientes.clear() }
+        if (listo) tts.stop()
     }
 
     private fun reproducir(frases: List<String>) {
@@ -210,11 +228,18 @@ object Sonidos {
         }.start()
     }
 
-    /** Chasquido breve y agudo: burbuja reventando o toque suave confirmado. */
+    /** Chasquido breve y agudo: toque suave confirmado, sin ser una burbuja. */
     fun pop() = reproducirMelodia(
         notas = listOf(1600.0 to 0.00, 2200.0 to 0.03),
         duracion = .14,
         volumen = .20
+    )
+
+    /** Tres notitas ascendentes y cristalinas: una burbuja reventando con gracia. */
+    fun burbuja() = reproducirMelodia(
+        notas = listOf(1318.5 to 0.00, 1760.0 to 0.035, 2349.3 to 0.07),
+        duracion = .30,
+        volumen = .19
     )
 
     /** Pequeña melodía sin archivos ni permisos: tres tonos locales. */

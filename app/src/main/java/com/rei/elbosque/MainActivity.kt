@@ -104,6 +104,8 @@ class MainActivity : ComponentActivity() {
 
                 // La música acompaña el menú y se calla al entrar en cualquier actividad.
                 LaunchedEffect(entradaActual?.destination?.route) {
+                    // Ninguna consigna del juego anterior debe continuar en la nueva pantalla.
+                    narrador.detener()
                     if (entradaActual?.destination?.route == "inicio") {
                         musicaMenu.reproducir()
                     } else {
@@ -142,7 +144,9 @@ class MainActivity : ComponentActivity() {
                             InicioScreen(
                                 estrellas = progreso.estrellas,
                                 narrador = narrador,
-                                onAbrir = navController::navigate
+                                onAbrir = { ruta ->
+                                    navController.navigate(ruta) { launchSingleTop = true }
+                                }
                             )
                         }
                         composable("formas") {
