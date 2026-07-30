@@ -348,25 +348,39 @@ class BurbujasViewModel(private val savedState: SavedStateHandle) : ViewModel() 
     private var reventadas = savedState["burbujas_reventadas"] ?: 0
     val totalReventadas: Int get() = reventadas
 
-    private fun nuevaBurbuja(): Burbuja {
-        val burbuja = Burbuja(
-            id = siguienteId++,
-            x = Random.nextFloat() * .74f + .06f,
-            y = Random.nextFloat() * .58f + .06f,
-            color = coloresBurbuja.random(),
-            radio = listOf(.11f, .14f, .17f).random()
+    /** Reintenta unas pocas veces para que las burbujas no queden pegadas entre sí. */
+    private fun nuevaBurbuja(existentes: List<Burbuja>): Burbuja {
+        var candidata: Burbuja
+        var intentos = 0
+        do {
+            candidata = Burbuja(
+                id = siguienteId,
+                x = Random.nextFloat() * .74f + .06f,
+                y = Random.nextFloat() * .58f + .06f,
+                color = coloresBurbuja.random(),
+                radio = listOf(.11f, .14f, .17f).random()
+            )
+            intentos++
+        } while (
+            intentos < 12 &&
+            existentes.any { kotlin.math.hypot(it.x - candidata.x, it.y - candidata.y) < .24f }
         )
+        siguienteId++
         savedState["burbuja_id"] = siguienteId
-        return burbuja
+        return candidata
     }
 
-    private val _burbujas = MutableStateFlow(List(5) { nuevaBurbuja() })
+    private val _burbujas = MutableStateFlow<List<Burbuja>>(
+        mutableListOf<Burbuja>().apply { repeat(5) { add(nuevaBurbuja(this)) } }
+    )
     val burbujas: StateFlow<List<Burbuja>> = _burbujas
 
     /** Revienta la burbuja tocada; devuelve true si con esta se completa un premio. */
     fun reventar(id: Int): Boolean {
-        if (_burbujas.value.none { it.id == id }) return false
-        _burbujas.value = _burbujas.value.filterNot { it.id == id } + nuevaBurbuja()
+        val actuales = _burbujas.value
+        if (actuales.none { it.id == id }) return false
+        val restantes = actuales.filterNot { it.id == id }
+        _burbujas.value = restantes + nuevaBurbuja(restantes)
         reventadas++
         savedState["burbujas_reventadas"] = reventadas
         return reventadas % 5 == 0

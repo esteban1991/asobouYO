@@ -12,26 +12,28 @@ class MusicaMenu(context: Context) {
         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
         .build()
 
+    // MediaPlayer.create() devuelve null si el recurso no se puede decodificar;
+    // sin esta comprobación, un .wav dañado tumbaría la app entera al iniciar.
     private val reproductor = MediaPlayer.create(
         context,
         R.raw.musica_menu_rei,
         atributos,
         0
-    ).apply {
+    )?.apply {
         isLooping = true
         // Presente pero suave: la narración siempre queda claramente por delante.
         setVolume(.42f, .42f)
     }
 
     fun reproducir() {
-        if (!reproductor.isPlaying) reproductor.start()
+        reproductor?.let { if (!it.isPlaying) it.start() }
     }
 
     fun pausar() {
-        if (reproductor.isPlaying) reproductor.pause()
+        reproductor?.let { if (it.isPlaying) it.pause() }
     }
 
     fun cerrar() {
-        reproductor.release()
+        reproductor?.release()
     }
 }
