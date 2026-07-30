@@ -49,15 +49,38 @@ val animalesParque = listOf(
     AnimalParque("elefante", R.drawable.parque_elefante, "azul"),
     AnimalParque("pato", R.drawable.parque_pato, "amarillo"),
     AnimalParque("mono", R.drawable.parque_mono, "café"),
-    AnimalParque("león", R.drawable.parque_leon, "naranja")
+    AnimalParque("león", R.drawable.parque_leon, "naranja"),
+    AnimalParque("perro", R.drawable.ic_perro, "café"),
+    AnimalParque("gato", R.drawable.ic_gato, "naranja"),
+    AnimalParque("pájaro", R.drawable.ic_pajaro, "azul"),
+    AnimalParque("pez", R.drawable.ic_pez, "azul"),
+    AnimalParque("oso", R.drawable.ic_oso, "café")
 )
 
 class ToboganViewModel(private val saved: SavedStateHandle) : ViewModel() {
+    // Una semilla distinta por instalación conserva la ronda al cerrar la app,
+    // pero evita que todas las niñas reciban siempre la misma secuencia inicial.
+    private val semilla:Int = saved["tobogan_semilla"]
+        ?: kotlin.random.Random.nextInt().also { saved["tobogan_semilla"]=it }
     private val _ronda = MutableStateFlow(saved["tobogan_ronda"] ?: 0)
     val ronda = _ronda
     private val _paso = MutableStateFlow(saved["tobogan_paso"] ?: 0)
     val paso = _paso
-    val animales get() = animalesParque.shuffled(java.util.Random(_ronda.value.toLong())).take(3)
+    val animales:List<AnimalParque>
+        get() {
+            val numero=_ronda.value
+            val anteriores=if(numero==0) emptySet() else {
+                animalesParque
+                    .shuffled(java.util.Random(semilla.toLong()+numero-1L))
+                    .take(3).toSet()
+            }
+            // Con once animales disponibles puede excluir por completo a los tres
+            // anteriores: cada nueva ronda presenta tres caras realmente nuevas.
+            return animalesParque
+                .filterNot { it in anteriores }
+                .shuffled(java.util.Random(semilla.toLong()+numero))
+                .take(3)
+        }
     fun comprobar(animal: AnimalParque): Boolean {
         if (animal != animales[_paso.value]) return false
         _paso.value++
@@ -151,9 +174,12 @@ class TrenParqueViewModel(private val saved: SavedStateHandle) : ViewModel() {
     FondoParque("Tobogán de animales",onVolver) {
         Text("${paso.coerceAtMost(3)} de 3",fontSize=28.sp,fontWeight=FontWeight.Bold,color=ReiColores.Tinta)
         Box(Modifier.fillMaxWidth().weight(1f)) {
-            Canvas(Modifier.fillMaxSize()){ val p=Path().apply{moveTo(size.width*.68f,size.height*.08f);cubicTo(size.width*.78f,size.height*.38f,size.width*.58f,size.height*.72f,size.width*.16f,size.height*.86f)}
-                drawPath(p,Color(0xFFFF8DA8),style=androidx.compose.ui.graphics.drawscope.Stroke(size.width*.16f,cap=androidx.compose.ui.graphics.StrokeCap.Round))
-                drawPath(p,Color(0xFFFFD2DC),style=androidx.compose.ui.graphics.drawscope.Stroke(size.width*.10f,cap=androidx.compose.ui.graphics.StrokeCap.Round)) }
+            Image(
+                painterResource(R.drawable.tobogan_vintage),
+                "Tobogán artesanal de madera",
+                Modifier.fillMaxSize().padding(horizontal=4.dp,vertical=8.dp),
+                contentScale=ContentScale.Fit
+            )
             if (paso < 3 && animalBajando == null) {
                 Image(
                     painterResource(animales[paso].icono),

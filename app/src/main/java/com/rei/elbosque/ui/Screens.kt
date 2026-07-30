@@ -349,9 +349,6 @@ fun InicioScreen(
                     item { BotonMenu(R.drawable.ic_libro, "Ordena Tamaños", Color(0xFFFFD66B)) {
                         narrador.decir("Ordena por tamaño"); onAbrir("ordena_tamano")
                     } }
-                    item { BotonMenu(R.drawable.ic_paraguas, "Respira", Color(0xFFB8D8F5)) {
-                        narrador.decir("Respira con Rei"); onAbrir("respira")
-                    } }
                     item { BotonMenu(R.drawable.parque_conejo, "Tobogán", Rosa) {
                         narrador.decir("Tobogán de animales"); onAbrir("tobogan")
                     } }

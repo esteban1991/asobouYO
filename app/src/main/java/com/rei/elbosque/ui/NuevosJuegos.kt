@@ -81,10 +81,11 @@ class AlimentaAnimalViewModel(private val saved: SavedStateHandle) : ViewModel()
     val ronda get() = rondas[_indice.value]
     fun opciones() = comidas.shuffled()
     fun comprobar(opcion: OpcionVisual): Boolean {
-        if (opcion != ronda.comida) return false
+        return opcion == ronda.comida
+    }
+    fun avanzar() {
         val nuevo = (_indice.value + 1) % rondas.size
         _indice.value = nuevo; saved["alimenta_indice"] = nuevo
-        return true
     }
 }
 
@@ -107,6 +108,7 @@ private fun CabeceraNueva(titulo: String, volver: () -> Unit) {
 private fun OpcionesGrandes(
     opciones: List<OpcionVisual>,
     modifier: Modifier = Modifier,
+    habilitado:Boolean = true,
     alTocar: (OpcionVisual) -> Unit
 ) {
     LazyVerticalGrid(
@@ -118,6 +120,7 @@ private fun OpcionesGrandes(
         items(opciones, key = { it.nombre }) { opcion ->
             Card(
                 onClick = { alTocar(opcion) },
+                enabled = habilitado,
                 modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                 shape = RoundedCornerShape(42.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White.copy(.88f)),
@@ -214,6 +217,7 @@ fun AlimentaAnimalScreen(vm: AlimentaAnimalViewModel, narrador: Narrador, premia
     val inclinacion = remember { Animatable(0f) }
     val lagrimaCaida = remember { Animatable(0f) }
     var triste by remember { mutableStateOf(false) }
+    var bloqueado by remember { mutableStateOf(false) }
 
     LaunchedEffect(indice) {
         delay(550); narrador.decir("Dale ${ronda.comida.nombre} al ${ronda.animal.nombre}")
@@ -270,11 +274,10 @@ fun AlimentaAnimalScreen(vm: AlimentaAnimalViewModel, narrador: Narrador, premia
                 ) { LagrimaAnimal(Modifier.fillMaxSize()) }
             }
         }
-        OpcionesGrandes(opciones, Modifier.weight(1f)) { opcion ->
+        OpcionesGrandes(opciones,Modifier.weight(1f),habilitado=!bloqueado) { opcion ->
             narrador.decir(opcion.nombre)
             if (vm.comprobar(opcion)) {
-                Sonidos.estrella(); premiar()
-                narrador.felicitar("¡Ñam, ñam!", "¡Muy bien, Rei!")
+                bloqueado=true
                 comidaVolando = opcion
                 scope.launch {
                     comidaEscala.snapTo(1f)
@@ -287,8 +290,16 @@ fun AlimentaAnimalScreen(vm: AlimentaAnimalViewModel, narrador: Narrador, premia
                         bocaAbierta.animateTo(1f, tween(180))
                     }
                     bocaAbierta.animateTo(0f, tween(220))
+                    // Solo ahora, cuando terminó de comer, cambia la ronda.
+                    Sonidos.estrella()
+                    premiar()
+                    narrador.felicitar("¡Ñam, ñam!", "¡Muy bien, Rei!")
+                    delay(650)
+                    vm.avanzar()
+                    bloqueado=false
                 }
             } else {
+                bloqueado=true
                 Sonidos.errorSuave(); narrador.decir("Oh, no. Quiere ${ronda.comida.nombre}")
                 scope.launch {
                     triste = true
@@ -300,6 +311,7 @@ fun AlimentaAnimalScreen(vm: AlimentaAnimalViewModel, narrador: Narrador, premia
                     inclinacion.animateTo(0f, tween(240))
                     delay(500)
                     triste = false
+                    bloqueado=false
                 }
             }
         }
