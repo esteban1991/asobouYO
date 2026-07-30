@@ -11,6 +11,9 @@ private val Context.dataStore by preferencesDataStore(name = "progreso_rei")
 
 data class ProgresoPersistido(val estrellas: Int = 0, val stickersDesbloqueados: Int = 0)
 
+/** Regla pura y comprobable: cada cinco estrellas abre un premio, hasta cinco. */
+fun calcularStickers(estrellas: Int): Int = (estrellas.coerceAtLeast(0) / 5).coerceAtMost(5)
+
 /**
  * DataStore conserva estrellas y stickers aunque se cierre la aplicación.
  * No se escribe ningún dato fuera del dispositivo.
@@ -31,7 +34,7 @@ class RecompensasRepository(private val context: Context) {
         context.dataStore.edit { preferencias ->
             val nuevasEstrellas = (preferencias[estrellasKey] ?: 0) + 1
             val anteriores = preferencias[stickersKey] ?: 0
-            val desbloqueados = minOf(5, nuevasEstrellas / 5)
+            val desbloqueados = calcularStickers(nuevasEstrellas)
             preferencias[estrellasKey] = nuevasEstrellas
             preferencias[stickersKey] = desbloqueados
             nuevoSticker = desbloqueados > anteriores

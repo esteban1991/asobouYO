@@ -24,12 +24,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -64,9 +66,11 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -79,17 +83,19 @@ import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
-private val Fondo1 = Color(0xFFFFF9E6)
-private val Fondo2 = Color(0xFFE0F7FA)
-private val Menta = Color(0xFF9BE3C5)
-private val Rosa = Color(0xFFFFB7CE)
-private val Lila = Color(0xFFCAB8F5)
-private val Melon = Color(0xFFFFC28F)
-private val Tinta = Color(0xFF3D5360)
-private val Oro = Color(0xFFFFC83D)
+import com.rei.elbosque.ui.ReiColores.Fondo1
+import com.rei.elbosque.ui.ReiColores.Fondo2
+import com.rei.elbosque.ui.ReiColores.Menta
+import com.rei.elbosque.ui.ReiColores.Rosa
+import com.rei.elbosque.ui.ReiColores.Lila
+import com.rei.elbosque.ui.ReiColores.Melon
+import com.rei.elbosque.ui.ReiColores.Tinta
+import com.rei.elbosque.ui.ReiColores.Oro
 
 @Composable
 private fun Fondo(content: @Composable () -> Unit) {
@@ -98,9 +104,14 @@ private fun Fondo(content: @Composable () -> Unit) {
             .fillMaxSize()
             .background(
                 androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Fondo1, Fondo2))
-            )
-            .padding(horizontal = 18.dp, vertical = 16.dp)
-    ) { content() }
+            ),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Box(
+            Modifier.fillMaxHeight().fillMaxWidth().widthIn(max = 720.dp)
+                .padding(horizontal = 18.dp, vertical = 16.dp)
+        ) { content() }
+    }
 }
 
 @Composable
@@ -199,6 +210,7 @@ fun InicioScreen(
     narrador: Narrador,
     onAbrir: (String) -> Unit
 ) {
+    var mostrarMasJuegos by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(700)
         narrador.decir("¡Hola Rei! Elige un juego")
@@ -214,7 +226,8 @@ fun InicioScreen(
         // Velo mínimo: conserva la ilustración y mejora el contraste de los controles.
         Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = .10f)))
         Column(
-            Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 16.dp),
+            Modifier.align(Alignment.TopCenter).fillMaxHeight().fillMaxWidth()
+                .widthIn(max = 720.dp).padding(horizontal = 18.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -248,57 +261,80 @@ fun InicioScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                item { BotonMenu(R.drawable.ic_formas, "Formas", Menta) {
-                    narrador.decir("Formas"); onAbrir("formas")
-                } }
-                item { BotonMenu(R.drawable.ic_estrellas, "Números", Rosa) {
-                    narrador.decir("Números"); onAbrir("numeros")
-                } }
-                item { BotonMenu(R.drawable.ic_oso, "Animales", Lila) {
-                    narrador.decir("Animales"); onAbrir("animales")
-                } }
-                item { BotonMenu(R.drawable.ic_lapiz, "Trazo", Melon) {
-                    narrador.decir("Trazo"); onAbrir("trazo")
-                } }
-                item { BotonMenu(R.drawable.ic_bus, "Bus", Color(0xFFFFD66B)) {
-                    narrador.decir("Autobús"); onAbrir("bus")
-                } }
-                item { BotonMenu(R.drawable.ic_gato, "Sombras", Color(0xFFB8D8F5)) {
-                    narrador.decir("Sombras"); onAbrir("sombras")
-                } }
-                item { BotonMenu(R.drawable.ic_arcoiris, "Colores", Menta) {
-                    narrador.decir("Colores"); onAbrir("colores")
-                } }
-                item { BotonMenu(R.drawable.ic_perro, "Sonidos", Rosa) {
-                    narrador.decir("Sonidos de animales"); onAbrir("sonidos_animales")
-                } }
-                item { BotonMenu(R.drawable.ic_pelota, "Burbujas", Lila) {
-                    narrador.decir("Burbujas"); onAbrir("burbujas")
-                } }
-                item { BotonMenu(R.drawable.ic_osito, "Tamaños", Melon) {
-                    narrador.decir("Grande y pequeño"); onAbrir("grande_pequeno")
-                } }
-                item { BotonMenu(R.drawable.ic_manzana, "Cestas", Color(0xFFFFD66B)) {
-                    narrador.decir("A cada cesta su color"); onAbrir("clasificar_color")
-                } }
-                item { BotonMenu(R.drawable.ic_platano, "Rompecabezas", Color(0xFFB8D8F5)) {
-                    narrador.decir("Rompecabezas"); onAbrir("puzzle")
-                } }
-                item { BotonMenu(R.drawable.ic_pajaro, "¿Quién dice?", Menta) {
-                    narrador.decir("¿Quién dice esto?"); onAbrir("quien_dice_esto")
-                } }
-                item { BotonMenu(R.drawable.ic_gorra, "Vestir a Rei", Rosa) {
-                    narrador.decir("Vestir a Rei"); onAbrir("vestir_rei")
-                } }
-                item { BotonMenu(R.drawable.ic_flor, "Emociones", Lila) {
-                    narrador.decir("Emociones"); onAbrir("emociones")
-                } }
-                item { BotonMenu(R.drawable.ic_estrella, "Contar", Melon) {
-                    narrador.decir("Contar hasta tres"); onAbrir("contar_hasta_3")
-                } }
-                item { BotonMenu(R.drawable.ic_sol, "Mi rutina", Color(0xFFFFD66B)) {
-                    narrador.decir("Mi rutina"); onAbrir("rutina_diaria")
-                } }
+                if (!mostrarMasJuegos) {
+                    item { BotonMenu(R.drawable.ic_oso, "Animales", Lila) {
+                        narrador.decir("Animales"); onAbrir("animales")
+                    } }
+                    item { BotonMenu(R.drawable.ic_arcoiris, "Colores", Menta) {
+                        narrador.decir("Colores"); onAbrir("colores")
+                    } }
+                    item { BotonMenu(R.drawable.ic_formas, "Formas", Rosa) {
+                        narrador.decir("Formas"); onAbrir("formas")
+                    } }
+                    item { BotonMenu(R.drawable.ic_estrellas, "Números", Melon) {
+                        narrador.decir("Números"); onAbrir("numeros")
+                    } }
+                    item { BotonMenu(R.drawable.ic_bus, "Autobús", Color(0xFFFFD66B)) {
+                        narrador.decir("Autobús"); onAbrir("bus")
+                    } }
+                    item { BotonMenu(R.drawable.ic_regalo, "Más juegos", Color(0xFFB8D8F5)) {
+                        narrador.decir("Más juegos")
+                        mostrarMasJuegos = true
+                    } }
+                } else {
+                    item { BotonMenu(R.drawable.ic_regalo, "Volver", Color(0xFFB8D8F5)) {
+                        narrador.decir("Volver a favoritos")
+                        mostrarMasJuegos = false
+                    } }
+                    item { BotonMenu(R.drawable.ic_paraguas, "Busca", Menta) {
+                        narrador.decir("Busca y encuentra"); onAbrir("busca_objeto")
+                    } }
+                    item { BotonMenu(R.drawable.ic_manzana, "Alimenta", Rosa) {
+                        narrador.decir("Alimenta al animal"); onAbrir("alimenta_animal")
+                    } }
+                    item { BotonMenu(R.drawable.ic_lapiz, "Trazo", Melon) {
+                        narrador.decir("Trazo"); onAbrir("trazo")
+                    } }
+                    item { BotonMenu(R.drawable.ic_gato, "Sombras", Color(0xFFB8D8F5)) {
+                        narrador.decir("Sombras"); onAbrir("sombras")
+                    } }
+                    item { BotonMenu(R.drawable.ic_perro, "Sonidos", Rosa) {
+                        narrador.decir("Sonidos de animales"); onAbrir("sonidos_animales")
+                    } }
+                    item { BotonMenu(R.drawable.ic_pelota, "Burbujas", Lila) {
+                        narrador.decir("Burbujas"); onAbrir("burbujas")
+                    } }
+                    item { BotonMenu(R.drawable.ic_osito, "Tamaños", Melon) {
+                        narrador.decir("Grande y pequeño"); onAbrir("grande_pequeno")
+                    } }
+                    item { BotonMenu(R.drawable.ic_manzana, "Cestas", Color(0xFFFFD66B)) {
+                        narrador.decir("A cada cesta su color"); onAbrir("clasificar_color")
+                    } }
+                    item { BotonMenu(R.drawable.ic_platano, "Rompecabezas", Color(0xFFB8D8F5)) {
+                        narrador.decir("Rompecabezas"); onAbrir("puzzle")
+                    } }
+                    item { BotonMenu(R.drawable.ic_pajaro, "¿Quién dice?", Menta) {
+                        narrador.decir("¿Quién dice esto?"); onAbrir("quien_dice_esto")
+                    } }
+                    item { BotonMenu(R.drawable.ic_gorra, "Vestir a Rei", Rosa) {
+                        narrador.decir("Vestir a Rei"); onAbrir("vestir_rei")
+                    } }
+                    item { BotonMenu(R.drawable.ic_flor, "Emociones", Lila) {
+                        narrador.decir("Emociones"); onAbrir("emociones")
+                    } }
+                    item { BotonMenu(R.drawable.ic_estrella, "Contar", Melon) {
+                        narrador.decir("Contar hasta tres"); onAbrir("contar_hasta_3")
+                    } }
+                    item { BotonMenu(R.drawable.ic_sol, "Mi rutina", Color(0xFFFFD66B)) {
+                        narrador.decir("Mi rutina"); onAbrir("rutina_diaria")
+                    } }
+                    item { BotonMenu(R.drawable.ic_nube, "¿Dónde vive?", Lila) {
+                        narrador.decir("¿Dónde vive?"); onAbrir("donde_vive")
+                    } }
+                    item { BotonMenu(R.drawable.ic_zapato, "El Camino", Color(0xFFB8D8F5)) {
+                        narrador.decir("El camino de Rei"); onAbrir("laberinto")
+                    } }
+                }
             }
             Button(
                 onClick = { narrador.decir("Álbum"); onAbrir("album") },
@@ -388,7 +424,7 @@ fun FormasScreen(
                             scope.launch {
                                 if (acierto) {
                                     Sonidos.estrella(); premiar()
-                                    narrador.decir("¡Yupi! ¡Muy bien, Rei!")
+                                    narrador.felicitar("¡Yupi! ¡Muy bien, Rei!")
                                     escala.animateTo(1.28f, tween(180))
                                     escala.animateTo(1f, tween(260, easing = FastOutSlowInEasing))
                                 } else {
@@ -473,7 +509,7 @@ fun NumerosScreen(
                         onClick = {
                             if (vm.comprobar(numero)) {
                                 Sonidos.estrella(); premiar()
-                                narrador.decir("¡Yupi! ¡Muy bien, Rei! $numero")
+                                narrador.felicitar("¡Yupi! ¡Muy bien, Rei! $numero")
                             } else {
                                 Sonidos.errorSuave()
                                 narrador.decir("Oh, no. Intenta otra vez")
@@ -527,7 +563,7 @@ fun AnimalesScreen(
                         onClick = {
                             if (vm.comprobar(animal)) {
                                 Sonidos.estrella(); premiar()
-                                narrador.decirSecuencia(animal.nombre, "¡Yupi! ${actual.silabas}")
+                                narrador.felicitar(animal.nombre, "¡Yupi! ${actual.silabas}")
                             } else {
                                 Sonidos.errorSuave()
                                 narrador.decirSecuencia(
@@ -605,7 +641,7 @@ fun TrazoScreen(
                                 if (vm.actualizar(sectores.size / puntos.size.toFloat())) {
                                     Sonidos.estrella()
                                     premiar()
-                                    narrador.decirSecuencia(
+                                    narrador.felicitar(
                                         "¡Yupi! ¡Muy bien, Rei!",
                                         "Has trazado un ${figura.nombre}"
                                     )
@@ -720,6 +756,8 @@ fun AlbumScreen(
     narrador: Narrador,
     onVolver: () -> Unit
 ) {
+    var stickerSaltando by rememberSaveable { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         delay(600)
         narrador.decir(
@@ -731,9 +769,56 @@ fun AlbumScreen(
             Cabecera("Álbum de stickers", onVolver)
             Spacer(Modifier.height(16.dp))
             Text("⭐ $estrellas  •  Uno nuevo cada 5", fontSize = 28.sp, color = Tinta)
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(12.dp))
+            // Los premios forman un pequeño jardín jugable, no solo una lista.
+            Box(
+                Modifier.fillMaxWidth().height(245.dp)
+                    .background(Color(0xFFDDF3B5), RoundedCornerShape(34.dp))
+                    .border(4.dp, Color.White.copy(.75f), RoundedCornerShape(34.dp))
+            ) {
+                Text(
+                    "El jardín de Rei",
+                    Modifier.align(Alignment.TopCenter).padding(8.dp),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Tinta
+                )
+                val lugares = listOf(
+                    Alignment.BottomStart, Alignment.TopEnd, Alignment.Center,
+                    Alignment.BottomEnd, Alignment.CenterStart
+                )
+                recompensas.filter { it.desbloqueado }.forEachIndexed { indice, recompensa ->
+                    val salto = if (stickerSaltando == recompensa.nombre) 1.24f else 1f
+                    Image(
+                        painterResource(recompensa.icono),
+                        recompensa.nombre,
+                        Modifier.align(lugares[indice % lugares.size])
+                            .padding(18.dp).size(82.dp).scale(salto)
+                            .clickable {
+                                narrador.felicitar("¡${recompensa.nombre}!", "Tu jardín está precioso")
+                                stickerSaltando = recompensa.nombre
+                                scope.launch {
+                                    delay(650)
+                                    stickerSaltando = null
+                                }
+                            }
+                    )
+                }
+                if (recompensas.none { it.desbloqueado }) {
+                    Text(
+                        "Gana cinco estrellas para plantar tu primer sticker",
+                        Modifier.align(Alignment.Center).padding(26.dp),
+                        fontSize = 25.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = Tinta
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -917,7 +1002,7 @@ fun QuienDiceEstoScreen(
                         onClick = {
                             if (vm.comprobar(animal)) {
                                 Sonidos.estrella(); premiar()
-                                narrador.decirSecuencia(animal.nombre, "¡Sí! ¡Muy bien!")
+                                narrador.felicitar(animal.nombre, "¡Sí! ¡Muy bien!")
                             } else {
                                 Sonidos.errorSuave()
                                 narrador.decirSecuencia(
@@ -1036,8 +1121,11 @@ fun GrandePequenoScreen(
     val grandeAIzquierda by vm.grandeAIzquierda.collectAsStateWithLifecycle()
     val objeto = vm.objeto
 
+    val articulo = if (objeto.femenino) "la" else "el"
+    fun tamano(esGrande: Boolean) = if (esGrande) "grande" else if (objeto.femenino) "pequeña" else "pequeño"
+
     fun preguntar() {
-        narrador.decir("Toca el ${objeto.nombre} ${if (pideGrande) "grande" else "pequeño"}")
+        narrador.decir("Toca $articulo ${objeto.nombre} ${tamano(pideGrande)}")
     }
 
     LaunchedEffect(indice, pideGrande) {
@@ -1053,7 +1141,7 @@ fun GrandePequenoScreen(
         ) {
             Cabecera("Grande y Pequeño", onVolver)
             Text(
-                "¿Cuál es el ${if (pideGrande) "grande" else "pequeño"}?",
+                "¿Cuál es $articulo ${tamano(pideGrande)}?",
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 color = Tinta,
@@ -1070,7 +1158,7 @@ fun GrandePequenoScreen(
                         onClick = {
                             if (vm.comprobar(esGrande)) {
                                 Sonidos.estrella(); premiar()
-                                narrador.decirSecuencia("¡Muy bien!", objeto.nombre)
+                                narrador.felicitar("¡Muy bien!", objeto.nombre)
                             } else {
                                 Sonidos.errorSuave()
                                 narrador.decir("Oh, no. Intenta otra vez")
@@ -1105,7 +1193,7 @@ fun ClasificarColorScreen(
     val cestas = remember(indice) { vm.cestas() }
 
     fun preguntar() {
-        narrador.decir("Lleva la pelota a la cesta ${objetivo.nombre}")
+        narrador.decir("Lleva la pelota a la cesta ${objetivo.femenino}")
     }
 
     LaunchedEffect(indice) {
@@ -1143,10 +1231,10 @@ fun ClasificarColorScreen(
                         onClick = {
                             if (vm.comprobar(cesta)) {
                                 Sonidos.estrella(); premiar()
-                                narrador.decirSecuencia("¡Sí!", "Cesta ${cesta.nombre}")
+                                narrador.felicitar("¡Sí!", "Cesta ${cesta.femenino}")
                             } else {
                                 Sonidos.errorSuave()
-                                narrador.decir("Oh, no. Busca ${objetivo.nombre}")
+                                narrador.decir("Oh, no. Busca la cesta ${objetivo.femenino}")
                             }
                         },
                         modifier = Modifier.weight(1f).fillMaxSize(),
@@ -1210,7 +1298,7 @@ fun PuzzleScreen(
                         onClick = {
                             if (vm.comprobar(pieza)) {
                                 Sonidos.estrella(); premiar()
-                                narrador.decirSecuencia(pieza.nombre, "¡Completaste el dibujo!")
+                                narrador.felicitar(pieza.nombre, "¡Completaste el dibujo!")
                                 scope.launch { alphaObjetivo.animateTo(1f, tween(500)) }
                             } else {
                                 Sonidos.errorSuave()
@@ -1357,7 +1445,7 @@ fun VestirReiScreen(
                     val puesta = prenda.tipo in puestas
                     Button(
                         onClick = {
-                            narrador.decir("Un ${prenda.nombre}")
+                            narrador.decir("${prenda.articulo} ${prenda.nombre}")
                             if (vm.tocar(prenda)) {
                                 Sonidos.pop(); premiar()
                                 if (vm.completo) {
@@ -1471,7 +1559,7 @@ fun EmocionesScreen(
                         onClick = {
                             if (vm.comprobar(opcion)) {
                                 Sonidos.estrella(); premiar()
-                                narrador.decirSecuencia("¡Sí!", opcion.nombre)
+                                narrador.felicitar("¡Sí!", opcion.nombre)
                             } else {
                                 Sonidos.errorSuave()
                                 narrador.decir("Oh, no. Intenta otra vez")
@@ -1542,7 +1630,7 @@ fun ContarHasta3Screen(
                             if (completo) {
                                 // Se encolan ambas frases para que el último número no sea
                                 // reemplazado por la felicitación ni por la ronda siguiente.
-                                narrador.decirSecuencia(
+                                narrador.felicitar(
                                     numeroEnPalabras[i],
                                     "¡Muy bien contando, Rei!"
                                 )
@@ -1667,7 +1755,7 @@ fun RutinaDiariaScreen(
                     val completo = vm.avanzar()
                     Sonidos.estrella()
                     premiar()
-                    if (completo) narrador.decirSecuencia("¡Terminaste la rutina, Rei!")
+                    if (completo) narrador.felicitar("¡Terminaste la rutina, Rei!")
                 },
                 modifier = Modifier.size(230.dp),
                 shape = CircleShape,
@@ -1681,6 +1769,252 @@ fun RutinaDiariaScreen(
                 color = Tinta,
                 textAlign = TextAlign.Center
             )
+        }
+    }
+}
+
+@Composable
+private fun IconoHabitat(habitat: Habitat, modifier: Modifier) {
+    Canvas(modifier) {
+        val w = size.width; val h = size.height
+        when (habitat) {
+            Habitat.GRANJA -> {
+                drawRoundRect(
+                    Color(0xFFE9C08D),
+                    topLeft = Offset(w * .2f, h * .45f),
+                    size = Size(w * .6f, h * .4f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f)
+                )
+                val techo = Path().apply {
+                    moveTo(w * .12f, h * .45f)
+                    lineTo(w * .5f, h * .12f)
+                    lineTo(w * .88f, h * .45f)
+                    close()
+                }
+                drawPath(techo, Color(0xFFE95D68))
+            }
+            Habitat.MAR -> {
+                drawCircle(Color(0xFF55A9E8), radius = w * .42f, center = Offset(w * .5f, h * .56f))
+                repeat(3) { i ->
+                    drawArc(
+                        color = Color.White,
+                        startAngle = 200f,
+                        sweepAngle = 140f,
+                        useCenter = false,
+                        topLeft = Offset(w * (.18f + i * .02f), h * (.4f + i * .13f)),
+                        size = Size(w * .64f, h * .18f),
+                        style = Stroke(width = w * .035f, cap = StrokeCap.Round)
+                    )
+                }
+            }
+            Habitat.SELVA -> {
+                drawRoundRect(
+                    Color(0xFF9B7146),
+                    topLeft = Offset(w * .44f, h * .55f),
+                    size = Size(w * .12f, h * .35f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f)
+                )
+                drawCircle(Color(0xFF6FCC9B), radius = w * .34f, center = Offset(w * .5f, h * .38f))
+            }
+        }
+    }
+}
+
+@Composable
+fun DondeViveScreen(
+    vm: DondeViveViewModel,
+    narrador: Narrador,
+    premiar: () -> Unit,
+    onVolver: () -> Unit
+) {
+    val indice by vm.indice.collectAsStateWithLifecycle()
+    val objetivo = vm.objetivo
+    val opciones = remember(indice) { vm.opciones() }
+
+    fun preguntar() {
+        narrador.decir("¿Dónde vive el ${objetivo.nombre}?")
+    }
+
+    LaunchedEffect(indice) {
+        delay(500)
+        preguntar()
+    }
+
+    Fondo {
+        Column(
+            Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Cabecera("¿Dónde Vive?", onVolver)
+            Button(
+                onClick = { preguntar() },
+                modifier = Modifier.size(220.dp),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(.78f)),
+                elevation = ButtonDefaults.buttonElevation(8.dp)
+            ) {
+                Image(
+                    painterResource(objetivo.icono),
+                    contentDescription = objetivo.nombre,
+                    modifier = Modifier.size(150.dp)
+                )
+            }
+            Text(
+                "Escucha y toca su hogar",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Tinta,
+                textAlign = TextAlign.Center
+            )
+            Row(
+                Modifier.fillMaxWidth().height(200.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                opciones.forEachIndexed { i, habitat ->
+                    Button(
+                        onClick = {
+                            if (vm.comprobar(habitat)) {
+                                Sonidos.estrella(); premiar()
+                                narrador.felicitar("¡Sí!", "Vive en ${habitat.etiqueta}")
+                            } else {
+                                Sonidos.errorSuave()
+                                narrador.decir("Oh, no. Vive en ${objetivo.habitat.etiqueta}")
+                            }
+                        },
+                        modifier = Modifier.weight(1f).fillMaxSize(),
+                        shape = RoundedCornerShape(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = listOf(Menta, Rosa)[i % 2]
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(7.dp)
+                    ) {
+                        IconoHabitat(habitat, Modifier.size(110.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CaritaRei(modifier: Modifier) {
+    Canvas(modifier) {
+        val w = size.width; val h = size.height
+        drawCircle(Color(0xFFE9C08D), radius = w * .48f, center = Offset(w * .5f, h * .5f))
+        drawCircle(Tinta, radius = w * .07f, center = Offset(w * .36f, h * .45f))
+        drawCircle(Tinta, radius = w * .07f, center = Offset(w * .64f, h * .45f))
+        drawCircle(Color(0xFFF6DDB6), radius = w * .18f, center = Offset(w * .5f, h * .63f))
+    }
+}
+
+@Composable
+fun LaberintoScreen(
+    vm: LaberintoViewModel,
+    narrador: Narrador,
+    premiar: () -> Unit,
+    onVolver: () -> Unit
+) {
+    val trayecto by vm.trayecto.collectAsStateWithLifecycle()
+    val anchoArea = 300.dp
+    val altoArea = 400.dp
+    val densidad = LocalDensity.current
+    val anchoPx = with(densidad) { anchoArea.toPx() }
+    val altoPx = with(densidad) { altoArea.toPx() }
+    val personajePx = with(densidad) { 46.dp.toPx() }
+    val inicioPx = remember(trayecto) { Offset(anchoPx * trayecto.ax, altoPx * trayecto.ay) }
+    val metaPx = remember(trayecto) { Offset(anchoPx * trayecto.bx, altoPx * trayecto.by) }
+    var posicion by remember(trayecto) { mutableStateOf(inicioPx) }
+    var llego by remember(trayecto) { mutableStateOf(false) }
+
+    LaunchedEffect(trayecto) {
+        delay(500)
+        narrador.decir("Arrastra a Rei por el camino hasta la estrella")
+    }
+
+    Fondo {
+        Column(
+            Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Cabecera("El Camino de Rei", onVolver)
+            Text(
+                "Lleva a Rei hasta la estrella",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Tinta,
+                textAlign = TextAlign.Center
+            )
+            Box(
+                Modifier
+                    .width(anchoArea)
+                    .height(altoArea)
+                    .background(Color.White.copy(.35f), RoundedCornerShape(32.dp))
+            ) {
+                Canvas(Modifier.matchParentSize()) {
+                    val medio = Offset(
+                        (inicioPx.x + metaPx.x) / 2f,
+                        minOf(inicioPx.y, metaPx.y) - size.height * .08f
+                    )
+                    val camino = Path().apply {
+                        moveTo(inicioPx.x, inicioPx.y)
+                        quadraticTo(medio.x, medio.y, metaPx.x, metaPx.y)
+                    }
+                    drawPath(
+                        camino,
+                        color = Color(0xFFFFD45F),
+                        style = Stroke(width = size.width * .12f, cap = StrokeCap.Round)
+                    )
+                    drawPath(
+                        camino,
+                        color = Color.White,
+                        style = Stroke(
+                            width = size.width * .018f,
+                            cap = StrokeCap.Round,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 18f))
+                        )
+                    )
+                    drawCircle(Color(0xFF6FCC9B), radius = size.width * .08f, center = metaPx)
+                    drawCircle(Color.White, radius = size.width * .05f, center = metaPx)
+                }
+                Box(
+                    Modifier
+                        .offset {
+                            IntOffset(
+                                (posicion.x - personajePx / 2f).roundToInt(),
+                                (posicion.y - personajePx / 2f).roundToInt()
+                            )
+                        }
+                        .size(with(densidad) { personajePx.toDp() })
+                        .pointerInput(trayecto) {
+                            detectDragGestures(
+                                onDrag = { cambio, arrastre ->
+                                    cambio.consume()
+                                    posicion = Offset(
+                                        (posicion.x + arrastre.x).coerceIn(0f, anchoPx),
+                                        (posicion.y + arrastre.y).coerceIn(0f, altoPx)
+                                    )
+                                },
+                                onDragEnd = {
+                                    val distancia = hypot(posicion.x - metaPx.x, posicion.y - metaPx.y)
+                                    if (!llego && distancia < anchoPx * .16f) {
+                                        llego = true
+                                        Sonidos.estrella()
+                                        premiar()
+                                        narrador.felicitar("¡Llegaste, Rei!", "¡Muy bien!")
+                                        vm.llegar()
+                                    } else {
+                                        Sonidos.pop()
+                                        posicion = inicioPx
+                                    }
+                                }
+                            )
+                        }
+                ) {
+                    CaritaRei(Modifier.fillMaxSize())
+                }
+            }
         }
     }
 }

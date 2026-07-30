@@ -52,11 +52,15 @@ import com.rei.elbosque.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rei.elbosque.audio.Narrador
 import com.rei.elbosque.audio.Sonidos
+import com.rei.elbosque.ui.ReiColores.Fondo1
+import com.rei.elbosque.ui.ReiColores.Fondo2
+import com.rei.elbosque.ui.ReiColores.Lila
+import com.rei.elbosque.ui.ReiColores.Menta
+import com.rei.elbosque.ui.ReiColores.Rosa
+import com.rei.elbosque.ui.ReiColores.Tinta as BusTinta
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-
-private val BusTinta = Color(0xFF3D5360)
 
 @Composable
 fun BusScreen(
@@ -89,7 +93,7 @@ fun BusScreen(
         val resultado = vm.tocar(objeto)
         if (resultado.acierto) {
             Sonidos.estrella()
-            narrador.decir("¡Yupi! ¡Muy bien!")
+            narrador.felicitar("¡Yupi! ¡Muy bien!")
         } else {
             Sonidos.errorSuave()
             narrador.decirSecuencia(objeto.nombre, "Oh, no. Ese no entra aquí")
@@ -99,7 +103,7 @@ fun BusScreen(
             premiar()
             scope.launch {
                 delay(700)
-                narrador.decir("¡Autobús completo! ¡Adiós!")
+                narrador.felicitar("¡Autobús completo! ¡Adiós!")
                 posicionBus.animateTo(1_300f, tween(900, easing = FastOutSlowInEasing))
                 vm.siguienteAutobus()
                 posicionBus.snapTo(-1_300f)
@@ -112,7 +116,7 @@ fun BusScreen(
     Box(
         Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF9E6), Color(0xFFE0F7FA))))
+            .background(Brush.verticalGradient(listOf(Fondo1, Fondo2)))
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Column(
@@ -219,11 +223,7 @@ private fun ObjetoArrastrable(
             },
         shape = RoundedCornerShape(36.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = listOf(
-                Color(0xFF9BE3C5),
-                Color(0xFFFFB7CE),
-                Color(0xFFCAB8F5)
-            )[objeto.nombre.length % 3]
+            containerColor = listOf(Menta, Rosa, Lila)[objeto.nombre.length % 3]
         ),
         elevation = ButtonDefaults.buttonElevation(8.dp)
     ) {

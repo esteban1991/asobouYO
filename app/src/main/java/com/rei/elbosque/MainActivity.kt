@@ -17,6 +17,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,12 +29,16 @@ import com.rei.elbosque.audio.MusicaMenu
 import com.rei.elbosque.audio.Narrador
 import com.rei.elbosque.audio.Sonidos
 import com.rei.elbosque.ui.AlbumScreen
+import com.rei.elbosque.ui.AlimentaAnimalScreen
+import com.rei.elbosque.ui.AlimentaAnimalViewModel
 import com.rei.elbosque.ui.AnimalesScreen
 import com.rei.elbosque.ui.AnimalesViewModel
 import com.rei.elbosque.ui.BurbujasScreen
 import com.rei.elbosque.ui.BurbujasViewModel
 import com.rei.elbosque.ui.BusScreen
 import com.rei.elbosque.ui.BusViewModel
+import com.rei.elbosque.ui.BuscaObjetoScreen
+import com.rei.elbosque.ui.BuscaObjetoViewModel
 import com.rei.elbosque.ui.ClasificarColorScreen
 import com.rei.elbosque.ui.ClasificarColorViewModel
 import com.rei.elbosque.ui.ColoresScreen
@@ -39,6 +46,8 @@ import com.rei.elbosque.ui.ColoresViewModel
 import com.rei.elbosque.ui.Confetti
 import com.rei.elbosque.ui.ContarHasta3Screen
 import com.rei.elbosque.ui.ContarHasta3ViewModel
+import com.rei.elbosque.ui.DondeViveScreen
+import com.rei.elbosque.ui.DondeViveViewModel
 import com.rei.elbosque.ui.EmocionesScreen
 import com.rei.elbosque.ui.EmocionesViewModel
 import com.rei.elbosque.ui.FormasScreen
@@ -46,6 +55,8 @@ import com.rei.elbosque.ui.FormasViewModel
 import com.rei.elbosque.ui.GrandePequenoScreen
 import com.rei.elbosque.ui.GrandePequenoViewModel
 import com.rei.elbosque.ui.InicioScreen
+import com.rei.elbosque.ui.LaberintoScreen
+import com.rei.elbosque.ui.LaberintoViewModel
 import com.rei.elbosque.ui.NumerosScreen
 import com.rei.elbosque.ui.NumerosViewModel
 import com.rei.elbosque.ui.PuzzleScreen
@@ -81,6 +92,7 @@ class MainActivity : ComponentActivity() {
                 val narrador = remember { Narrador(applicationContext) }
                 val musicaMenu = remember { MusicaMenu(applicationContext) }
                 val entradaActual by navController.currentBackStackEntryAsState()
+                val lifecycleOwner = LocalLifecycleOwner.current
                 var celebracionId by remember { mutableIntStateOf(0) }
 
                 DisposableEffect(Unit) {
@@ -99,11 +111,28 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                // Nunca deja música sonando cuando la app se minimiza o se bloquea.
+                DisposableEffect(lifecycleOwner, entradaActual?.destination?.route) {
+                    val observador = LifecycleEventObserver { _, evento ->
+                        when (evento) {
+                            Lifecycle.Event.ON_RESUME ->
+                                if (entradaActual?.destination?.route == "inicio") {
+                                    musicaMenu.reproducir()
+                                }
+                            Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP ->
+                                musicaMenu.pausar()
+                            else -> Unit
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observador)
+                    onDispose { lifecycleOwner.lifecycle.removeObserver(observador) }
+                }
+
                 LaunchedEffect(Unit) {
                     recompensas.stickerDesbloqueado.collect {
                         celebracionId++
                         Sonidos.celebracion()
-                        narrador.decir("¡Yupi! ¡Lo hiciste muy bien, Rei! Tienes un sticker nuevo")
+                        narrador.felicitar("¡Yupi! ¡Lo hiciste muy bien, Rei! Tienes un sticker nuevo")
                     }
                 }
 
@@ -220,6 +249,30 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("album") {
                             AlbumScreen(stickers, progreso.estrellas, narrador) {
+                                navController.popBackStack()
+                            }
+                        }
+                        composable("busca_objeto") {
+                            val vm: BuscaObjetoViewModel = viewModel()
+                            BuscaObjetoScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
+                        composable("alimenta_animal") {
+                            val vm: AlimentaAnimalViewModel = viewModel()
+                            AlimentaAnimalScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
+                        composable("donde_vive") {
+                            val vm: DondeViveViewModel = viewModel()
+                            DondeViveScreen(vm, narrador, recompensas::premiarAcierto) {
+                                navController.popBackStack()
+                            }
+                        }
+                        composable("laberinto") {
+                            val vm: LaberintoViewModel = viewModel()
+                            LaberintoScreen(vm, narrador, recompensas::premiarAcierto) {
                                 navController.popBackStack()
                             }
                         }

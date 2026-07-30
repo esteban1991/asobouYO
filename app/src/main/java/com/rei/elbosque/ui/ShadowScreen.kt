@@ -39,6 +39,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rei.elbosque.audio.Narrador
 import com.rei.elbosque.audio.Sonidos
+import com.rei.elbosque.ui.ReiColores.Fondo1
+import com.rei.elbosque.ui.ReiColores.Fondo2
+import com.rei.elbosque.ui.ReiColores.Lila
+import com.rei.elbosque.ui.ReiColores.Menta
+import com.rei.elbosque.ui.ReiColores.Rosa
+import com.rei.elbosque.ui.ReiColores.Tinta as tinta
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -54,7 +60,6 @@ fun SombrasScreen(
     val opciones = remember(indice) { vm.opciones() }
     val escala = remember { Animatable(1f) }
     val scope = rememberCoroutineScope()
-    val tinta = Color(0xFF3D5360)
 
     fun preguntar() {
         val pregunta = when (objetivo.tipo) {
@@ -73,7 +78,7 @@ fun SombrasScreen(
     Box(
         Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF9E6), Color(0xFFE0F7FA))))
+            .background(Brush.verticalGradient(listOf(Fondo1, Fondo2)))
             .padding(16.dp)
     ) {
         Column(
@@ -131,7 +136,7 @@ fun SombrasScreen(
                             if (vm.comprobar(opcion)) {
                                 Sonidos.estrella()
                                 premiar()
-                                narrador.decirSecuencia(
+                                narrador.felicitar(
                                     opcion.nombre,
                                     "¡Yupi! ¡Muy bien! Es ${objetivo.nombre}"
                                 )
@@ -150,11 +155,7 @@ fun SombrasScreen(
                         modifier = Modifier.weight(1f).height(155.dp),
                         shape = RoundedCornerShape(38.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = listOf(
-                                Color(0xFF9BE3C5),
-                                Color(0xFFFFB7CE),
-                                Color(0xFFCAB8F5)
-                            )[posicion]
+                            containerColor = listOf(Menta, Rosa, Lila)[posicion]
                         )
                     ) {
                         Image(

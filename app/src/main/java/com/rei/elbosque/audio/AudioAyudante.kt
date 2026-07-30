@@ -7,19 +7,24 @@ import android.media.AudioTrack
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import android.os.SystemClock
 import java.util.Locale
 
 /** Narrador offline. Usa únicamente el motor TTS instalado en Android. */
 class Narrador(context: Context) : TextToSpeech.OnInitListener {
     private var listo = false
+    @Volatile private var protegerColaHasta = 0L
     private val pendientes = mutableListOf<List<String>>()
-    // El teléfono de prueba tiene Google TTS instalado, pero ningún motor por defecto
-    // configurado. Elegirlo explícitamente evita que los toques queden en silencio.
-    private val tts = TextToSpeech(
-        context.applicationContext,
-        this,
-        "com.google.android.tts"
-    )
+    private val motorGoogleDisponible = runCatching {
+        context.packageManager.getPackageInfo("com.google.android.tts", 0)
+    }.isSuccess
+    // Google ofrece la mejor voz en el teléfono de Rei. En otros dispositivos se
+    // utiliza el motor configurado por Android en lugar de dejar la app muda.
+    private val tts = if (motorGoogleDisponible) {
+        TextToSpeech(context.applicationContext, this, "com.google.android.tts")
+    } else {
+        TextToSpeech(context.applicationContext, this)
+    }
 
     override fun onInit(resultado: Int) {
         Log.i("ReiTTS", "onInit=$resultado motor=${tts.defaultEngine}")
@@ -96,6 +101,15 @@ class Narrador(context: Context) : TextToSpeech.OnInitListener {
         decirSecuencia(texto)
     }
 
+    /**
+     * Protege una felicitación para que la consigna de la ronda siguiente se
+     * encole y no la corte. Es especialmente importante con voces lentas.
+     */
+    fun felicitar(vararg frases: String) {
+        protegerColaHasta = SystemClock.elapsedRealtime() + 3_200L
+        decirSecuencia(*frases)
+    }
+
     /** Pronuncia varias frases en orden, sin que una corte a la anterior. */
     fun decirSecuencia(vararg frases: String) {
         val limpias = frases.filter { it.isNotBlank() }
@@ -112,10 +126,15 @@ class Narrador(context: Context) : TextToSpeech.OnInitListener {
     }
 
     private fun reproducir(frases: List<String>) {
+        val conservarFelicitacion = SystemClock.elapsedRealtime() < protegerColaHasta
         frases.forEachIndexed { indice, frase ->
             tts.speak(
                 frase,
-                if (indice == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD,
+                if (indice == 0 && !conservarFelicitacion) {
+                    TextToSpeech.QUEUE_FLUSH
+                } else {
+                    TextToSpeech.QUEUE_ADD
+                },
                 null,
                 "rei_${System.nanoTime()}_$indice"
             )

@@ -37,6 +37,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rei.elbosque.audio.Narrador
 import com.rei.elbosque.audio.Sonidos
+import com.rei.elbosque.ui.ReiColores.Fondo1
+import com.rei.elbosque.ui.ReiColores.Fondo2
+import com.rei.elbosque.ui.ReiColores.Tinta as tinta
 import kotlinx.coroutines.delay
 
 @Composable
@@ -49,7 +52,6 @@ fun ColoresScreen(
     val indice by vm.indice.collectAsStateWithLifecycle()
     val objetivo = vm.colores[indice]
     val opciones = remember(indice) { vm.opciones() }
-    val tinta = Color(0xFF3D5360)
 
     fun preguntar() {
         narrador.decir("Toca el color ${objetivo.nombre}")
@@ -63,7 +65,7 @@ fun ColoresScreen(
     Box(
         Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFFFFF9E6), Color(0xFFE0F7FA))))
+            .background(Brush.verticalGradient(listOf(Fondo1, Fondo2)))
             .padding(16.dp)
     ) {
         Column(
@@ -116,7 +118,7 @@ fun ColoresScreen(
                             if (vm.comprobar(opcion)) {
                                 Sonidos.estrella()
                                 premiar()
-                                narrador.decirSecuencia(
+                                narrador.felicitar(
                                     opcion.nombre,
                                     "¡Yupi! ¡Muy bien!"
                                 )

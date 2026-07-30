@@ -250,7 +250,7 @@ class SombrasViewModel(private val savedState: SavedStateHandle) : ViewModel() {
     }
 }
 
-data class ColorAprendizaje(val nombre: String, val color: Color)
+data class ColorAprendizaje(val nombre: String, val color: Color, val femenino: String = nombre)
 
 class ColoresViewModel(private val savedState: SavedStateHandle) : ViewModel() {
     val colores = listOf(
@@ -387,16 +387,16 @@ class BurbujasViewModel(private val savedState: SavedStateHandle) : ViewModel() 
     }
 }
 
-data class ObjetoTamano(val nombre: String, @DrawableRes val icono: Int)
+data class ObjetoTamano(val nombre: String, @DrawableRes val icono: Int, val femenino: Boolean = false)
 
 class GrandePequenoViewModel(private val savedState: SavedStateHandle) : ViewModel() {
     private val objetos = listOf(
-        ObjetoTamano("Pelota", R.drawable.ic_pelota),
-        ObjetoTamano("Manzana", R.drawable.ic_manzana),
+        ObjetoTamano("Pelota", R.drawable.ic_pelota, femenino = true),
+        ObjetoTamano("Manzana", R.drawable.ic_manzana, femenino = true),
         ObjetoTamano("Osito", R.drawable.ic_osito),
         ObjetoTamano("Zapato", R.drawable.ic_zapato),
-        ObjetoTamano("Flor", R.drawable.ic_flor),
-        ObjetoTamano("Estrella", R.drawable.ic_estrella)
+        ObjetoTamano("Flor", R.drawable.ic_flor, femenino = true),
+        ObjetoTamano("Estrella", R.drawable.ic_estrella, femenino = true)
     )
     private val _indice = MutableStateFlow(savedState["gp_objeto"] ?: Random.nextInt(objetos.size))
     val indice: StateFlow<Int> = _indice
@@ -426,10 +426,10 @@ class GrandePequenoViewModel(private val savedState: SavedStateHandle) : ViewMod
 
 class ClasificarColorViewModel(private val savedState: SavedStateHandle) : ViewModel() {
     private val colores = listOf(
-        ColorAprendizaje("rojo", Color(0xFFE95D68)),
-        ColorAprendizaje("azul", Color(0xFF55A9E8)),
-        ColorAprendizaje("amarillo", Color(0xFFFFD45F)),
-        ColorAprendizaje("verde", Color(0xFF6FCC9B))
+        ColorAprendizaje("rojo", Color(0xFFE95D68), femenino = "roja"),
+        ColorAprendizaje("azul", Color(0xFF55A9E8), femenino = "azul"),
+        ColorAprendizaje("amarillo", Color(0xFFFFD45F), femenino = "amarilla"),
+        ColorAprendizaje("verde", Color(0xFF6FCC9B), femenino = "verde")
     )
     private val _indice = MutableStateFlow(savedState["clas_color"] ?: Random.nextInt(colores.size))
     val indice: StateFlow<Int> = _indice
@@ -481,7 +481,7 @@ class PuzzleViewModel(private val savedState: SavedStateHandle) : ViewModel() {
 }
 
 enum class TipoPrenda { GORRO, BUFANDA, BOTAS }
-data class Prenda(val tipo: TipoPrenda, val nombre: String, val color: Color)
+data class Prenda(val tipo: TipoPrenda, val nombre: String, val color: Color, val articulo: String)
 
 class VestirReiViewModel(private val savedState: SavedStateHandle) : ViewModel() {
     private val coloresPrenda = listOf(
@@ -490,9 +490,9 @@ class VestirReiViewModel(private val savedState: SavedStateHandle) : ViewModel()
     )
 
     private fun prendasAleatorias() = listOf(
-        Prenda(TipoPrenda.GORRO, "gorro", coloresPrenda.random()),
-        Prenda(TipoPrenda.BUFANDA, "bufanda", coloresPrenda.random()),
-        Prenda(TipoPrenda.BOTAS, "botas", coloresPrenda.random())
+        Prenda(TipoPrenda.GORRO, "gorro", coloresPrenda.random(), articulo = "Un"),
+        Prenda(TipoPrenda.BUFANDA, "bufanda", coloresPrenda.random(), articulo = "Una"),
+        Prenda(TipoPrenda.BOTAS, "botas", coloresPrenda.random(), articulo = "Unas")
     )
 
     private val _prendas = MutableStateFlow(prendasAleatorias())
@@ -521,7 +521,7 @@ class VestirReiViewModel(private val savedState: SavedStateHandle) : ViewModel()
     }
 }
 
-enum class Emocion(val nombre: String) { FELIZ("feliz"), TRISTE("triste"), SORPRENDIDO("sorprendido") }
+enum class Emocion(val nombre: String) { FELIZ("feliz"), TRISTE("triste"), SORPRENDIDO("sorprendida") }
 
 class EmocionesViewModel(private val savedState: SavedStateHandle) : ViewModel() {
     private val _emocion = MutableStateFlow(
@@ -584,5 +584,78 @@ class RutinaDiariaViewModel(private val savedState: SavedStateHandle) : ViewMode
         _indice.value = if (completo) 0 else siguiente
         savedState["rutina_paso"] = _indice.value
         return completo
+    }
+}
+
+enum class Habitat(val etiqueta: String) {
+    GRANJA("la granja"),
+    MAR("el mar"),
+    SELVA("la selva")
+}
+
+data class AnimalHabitat(val nombre: String, @DrawableRes val icono: Int, val habitat: Habitat)
+
+private val animalesHabitat = listOf(
+    AnimalHabitat("Perro", R.drawable.ic_perro, Habitat.GRANJA),
+    AnimalHabitat("Gato", R.drawable.ic_gato, Habitat.GRANJA),
+    AnimalHabitat("Pez", R.drawable.ic_pez, Habitat.MAR),
+    AnimalHabitat("Pájaro", R.drawable.ic_pajaro, Habitat.SELVA),
+    AnimalHabitat("Oso", R.drawable.ic_oso, Habitat.SELVA)
+)
+
+class DondeViveViewModel(private val savedState: SavedStateHandle) : ViewModel() {
+    private val animales = animalesHabitat
+    private val _indice = MutableStateFlow(savedState["donde_vive"] ?: Random.nextInt(animales.size))
+    val indice: StateFlow<Int> = _indice
+    val objetivo: AnimalHabitat get() = animales[_indice.value]
+
+    /** Dos opciones: el hábitat correcto y uno distinto al azar. */
+    fun opciones(): List<Habitat> {
+        val distractor = Habitat.entries.filterNot { it == objetivo.habitat }.random()
+        return listOf(objetivo.habitat, distractor).shuffled()
+    }
+
+    fun comprobar(habitat: Habitat): Boolean {
+        val acierto = habitat == objetivo.habitat
+        if (acierto) {
+            var siguiente: Int
+            do siguiente = Random.nextInt(animales.size) while (siguiente == _indice.value)
+            _indice.value = siguiente
+            savedState["donde_vive"] = siguiente
+        }
+        return acierto
+    }
+}
+
+/** Trayecto simple de A (arriba-izquierda) a B (abajo-derecha), en fracciones 0f..1f del área de juego. */
+data class TrayectoCamino(val ax: Float, val ay: Float, val bx: Float, val by: Float)
+
+class LaberintoViewModel(private val savedState: SavedStateHandle) : ViewModel() {
+    private fun trayectoAleatorio() = TrayectoCamino(
+        ax = .12f,
+        ay = Random.nextFloat() * .28f + .10f,
+        bx = .82f,
+        by = Random.nextFloat() * .28f + .54f
+    )
+
+    private val _trayecto = MutableStateFlow(
+        TrayectoCamino(
+            ax = savedState["lab_ax"] ?: .12f,
+            ay = savedState["lab_ay"] ?: .16f,
+            bx = savedState["lab_bx"] ?: .82f,
+            by = savedState["lab_by"] ?: .62f
+        )
+    )
+    val trayecto: StateFlow<TrayectoCamino> = _trayecto
+
+    /** Se llama al soltar a Rei sobre la meta: siempre premia y prepara un camino nuevo. */
+    fun llegar(): Boolean {
+        val nuevo = trayectoAleatorio()
+        _trayecto.value = nuevo
+        savedState["lab_ax"] = nuevo.ax
+        savedState["lab_ay"] = nuevo.ay
+        savedState["lab_bx"] = nuevo.bx
+        savedState["lab_by"] = nuevo.by
+        return true
     }
 }
